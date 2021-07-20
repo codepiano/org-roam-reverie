@@ -1,64 +1,74 @@
 <template>
-  <div id="graph" />
+  <div id="network" />
 </template>
 
 <script>
 
-import cytoscape from 'cytoscape'
-import cola from 'cytoscape-cola'
-import {getData} from '@/js/axios'
+import { DataSet, DataView } from "vis-data/peer";
+import { Network } from "vis-network/peer";
+import "vis-network/styles/vis-network.css";
+import {getNetworkData} from '@/js/axios'
+
+let nodeDataset = new DataSet();
+let edgeDataset = new DataSet();
 
 export default {
   name: 'Graph',
   methods: {
-    createCytoscape() {
-
-      cytoscape.use(cola);
-      const cy = cytoscape({
-        container: document.getElementById('graph'),
-        boxSelectionEnabled: false,
-        userZoomingEnabled: true, //滚轮缩放
-        layout: {
-          name: 'cola',
-          nodeDimensionsIncludeLabels: true,
-        },
-        style: [{
-          selector: 'node',
-          style: {
-            'content': 'data(title)',
-            'pie-size': '100%',
-            'text-wrap': "wrap",
-            'text-max-width': "150",
-            'text-overflow-wrap': "anywhere",
-            'text-justification': "center",
-            'text-valign': 'center',
-            'text-halign': 'left',
+    initNetwork() {
+      let option ={
+        height: '100%',
+        width: '100%',
+        nodes: {shape: "dot"},
+        interaction: {hover: true},
+        layout: {improvedLayout: true},
+        physics: {
+          solver: "forceAtlas2Based",
+          forceAtlas2Based: {
+            gravitationalConstant: -200,
+            centralGravity: 0.01,
+            springConstant: 0.56,
+            damping: 1,
+            avoidOverlap: 0.8
           }
         },
-          {
-            selector: 'edge',
-            style: {
-              width: 3,
-              'target-arrow-shape': 'triangle',
-              'line-color': '#9dbaea',
-              'target-arrow-color': '#9dbaea',
-              'curve-style': 'bezier',
-            }
+        edges: {
+          smooth: {type: "continuous"}
+        }
+      }
+      let view = new DataView(nodeDataset, {})
+      let globalNetwork = new Network(document.getElementById("network"), {
+            nodes: view,
+            edges: edgeDataset
           },
-
-        ],
-        elements: Promise.resolve(getData),
+          option);
+      globalNetwork.once('startStabilizing', function() {
+        let scaleOption = { scale : 0.2 };
+        globalNetwork.moveTo(scaleOption);
+      })
+      globalNetwork.once('afterDrawing', () => {
+        document.getElementById("network").style.height = '100vh'
+      })
+      getNetworkData.then(function (response) {
+        if (response.status !== 200) {
+          return []
+        }
+        let networkData = response.data
+        nodeDataset.update(networkData.nodes)
+        edgeDataset.update(networkData.edges)
+      }).catch(function (error) {
+        console.log(error)
+        return []
       });
     },
   },
   mounted() {
-    this.createCytoscape()
+    this.initNetwork()
   }
 }
 </script>
 
 <style scoped>
-  #graph {
-    height: 1000px;
+  #network {
   }
 </style>
