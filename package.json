@@ -7,7 +7,6 @@
   },
   "dependencies": {
     "axios": "^0.21.1",
-    "cytoscape": "^3.19.0",
     "element-plus": "latest",
     "vue": "^3.0.5"
   },
