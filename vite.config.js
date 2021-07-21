@@ -15,7 +15,7 @@ export default defineConfig({
     },
     server: {
         proxy: {
-            '/roam-data': {
+            '^/roam-.*': {
                 target: 'http://localhost:8080',
                 changeOrigin: true,
                 secure: false
