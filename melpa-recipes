@@ -1,0 +1,4 @@
+(org-roam-reverie
+ :repo "codepiano/org-roam-reverie"
+ :fetcher github
+ :files ("*.el" "index.html"))
