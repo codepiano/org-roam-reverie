@@ -3,8 +3,8 @@
     <div id="network"/>
     <el-button id="btn-setting" @click="drawer = true" type="primary" icon="el-icon-setting" circle
                size="mini"></el-button>
-    <div id="node-selector" >
-      <NodeSelector v-on:selectNode="moveToNode" :nodes-map="nodesMap"/>
+    <div id="node-selector">
+      <NodeSelector v-on:selectTitle="moveToNode" :nodes-map="nodesMap"/>
     </div>
     <el-drawer title="我是标题" v-model="drawer" :direction="direction">
       <span>我来啦!</span>
@@ -73,18 +73,19 @@ export default {
             edges: edgeDataset
           },
           option);
+
       globalNetwork.once('startStabilizing', () => {
         let scaleOption = {scale: 0.05};
         globalNetwork.moveTo(scaleOption);
       })
+      // resize canvas
       globalNetwork.once('afterDrawing', () => {
-        console.log("after drawing")
         document.getElementById("network").style.height = '100vh'
       })
-      globalNetwork.on("stabilizationIterationsDone", function () {
-        console.log("stabilizationIterationsDone")
-        globalNetwork.setOptions({physics: false});
-      });
+      // add node click event
+      globalNetwork.on("selectNode", this.openRoamProtocol)
+
+
       // let count = 1
       // globalNetwork.on("stabilizationProgress", () => console.log('doing'))
       // globalNetwork.on("stabilized", () => console.log('done'))
@@ -194,8 +195,7 @@ export default {
       })
       this.nodesMap = nodesMap
     },
-    moveToNode: (nodeId)  => {
-      console.log(nodeId)
+    moveToNode(nodeId) {
       if (!nodeId) {
         return
       }
@@ -203,8 +203,15 @@ export default {
         "animation": true
       })
       globalNetwork.selectNodes([nodeId])
+    },
+    openRoamProtocol(data) {
+      if (data.nodes.length !== 1) {
+        return
+      }
+      let nodeId = data.nodes[0]
+      let url = `org-protocol://roam-node?node=${nodeId}`
+      window.open(url, "_self")
     }
-
     // method ends
   },
   mounted() {

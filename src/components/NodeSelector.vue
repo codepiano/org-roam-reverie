@@ -6,7 +6,7 @@
       size="medium"
       :options="options"
       clearable
-      v-on:change="$emit('selectNode', value)"
+      v-on:change="$emit('selectTitle', value)"
       placeholder="请选择">
     <template #default="{item}">
       <span style="margin-right: 8px;">{{ item.label }}</span>
