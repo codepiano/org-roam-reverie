@@ -1,5 +1,15 @@
 <template>
-  <div id="network"/>
+  <div>
+    <div id="network"/>
+    <el-button id="btn-setting" @click="drawer = true" type="primary" icon="el-icon-setting" circle
+               size="mini"></el-button>
+    <div id="node-selector" >
+      <NodeSelector v-on:selectNode="moveToNode" :nodes-map="nodesMap"/>
+    </div>
+    <el-drawer title="我是标题" v-model="drawer" :direction="direction">
+      <span>我来啦!</span>
+    </el-drawer>
+  </div>
 </template>
 
 <script>
@@ -9,18 +19,21 @@ import {Network} from "vis-network/peer";
 import "vis-network/styles/vis-network.css";
 import {getNetworkData, getNetworkOptions} from '@/js/axios'
 import {visNetworkDefault} from '@/js/config'
+import NodeSelector from "@/components/NodeSelector.vue";
 
 let nodeDataset = new DataSet();
 let edgeDataset = new DataSet();
 let edgesMap = new Map()
-let nodesMap = new Map()
+let globalNetwork = null;
 
 export default {
   name: 'Graph',
+  components: {NodeSelector},
   data() {
     return {
       drawer: false,
       direction: 'rtl',
+      nodesMap: new Map()
     }
   },
   methods: {
@@ -36,19 +49,26 @@ export default {
         physics: {
           solver: "forceAtlas2Based",
           forceAtlas2Based: {
-            gravitationalConstant: -200,
-            centralGravity: 0.01,
-            springConstant: 0.56,
+            gravitationalConstant: -500,
+            centralGravity: 0.005,
+            springConstant: 0.6,
+            springLength: 60,
             damping: 1,
-            avoidOverlap: 0.8
-          }
+            avoidOverlap: 0.5
+          },
+          maxVelocity: 2000,
+          minVelocity: 60,
+          stabilization: {
+            enabled: true,
+          },
+          timestep: 0.3,
         },
         edges: {
           smooth: {type: "continuous"}
         }
       }
       let view = new DataView(nodeDataset, {})
-      let globalNetwork = new Network(document.getElementById("network"), {
+      globalNetwork = new Network(document.getElementById("network"), {
             nodes: view,
             edges: edgeDataset
           },
@@ -58,29 +78,42 @@ export default {
         globalNetwork.moveTo(scaleOption);
       })
       globalNetwork.once('afterDrawing', () => {
+        console.log("after drawing")
         document.getElementById("network").style.height = '100vh'
       })
+      globalNetwork.on("stabilizationIterationsDone", function () {
+        console.log("stabilizationIterationsDone")
+        globalNetwork.setOptions({physics: false});
+      });
+      // let count = 1
+      // globalNetwork.on("stabilizationProgress", () => console.log('doing'))
+      // globalNetwork.on("stabilized", () => console.log('done'))
+      // globalNetwork.on("resize", () => console.log('resize'))
+      // globalNetwork.on("initRedraw", () => console.log('initRedraw' + count++))
+      // globalNetwork.on("beforeDrawing", () => console.log('beforeDrawing'))
+      //
+      // globalNetwork.on("afterDrawing", () => console.log('afterDrawing'))
+      // globalNetwork.on("animationFinished", () => console.log('animationFinished'))
 
-      let that = this
       // get options and data from server
       let networkOption = null
-      getNetworkOptions.then(function (response) {
+      getNetworkOptions.then(response => {
         if (response.status !== 200) {
           return
         }
         networkOption = response.data
         return getNetworkData
-      }).then(function (response) {
+      }).then(response => {
         if (response.status !== 200) {
           return
         }
         let networkData = response.data
         let nodes = networkData.nodes
+        this.initNodesMap(nodes)
+        this.initEdgesMap(networkData.edges)
+        this.initNodeValueByEdgesMap(nodes)
         if (networkOption.autoGroup) {
-          that.initNodesMap(nodes)
-          that.initEdgesMap(networkData.edges)
-          that.initNodeValueByEdgesMap(nodes)
-          that.initNodeGroupByNodeValue(nodes)
+          this.initNodeGroupByNodeValue(nodes)
         }
         nodeDataset.update(nodes)
         edgeDataset.update(networkData.edges)
@@ -114,16 +147,16 @@ export default {
             let maxNodeValue = 0
             let maxNodeId = null
             connectedNodeIds.forEach((nodeId) => {
-              if (!nodesMap.has(nodeId)) {
+              if (!this.nodesMap.has(nodeId)) {
                 return
               }
-              let connectedNode = nodesMap.get(nodeId)
+              let connectedNode = this.nodesMap.get(nodeId)
               if (connectedNode.value > maxNodeValue) {
                 maxNodeValue = connectedNode.value
                 maxNodeId = connectedNode.id
               }
             })
-            let maxNode = nodesMap.get(maxNodeId)
+            let maxNode = this.nodesMap.get(maxNodeId)
             if (!maxNode.group) {
               maxNode.group = group
               group += 1
@@ -155,11 +188,23 @@ export default {
       })
     },
     initNodesMap(nodes) {
-      nodesMap.clear()
+      let nodesMap = new Map()
       nodes.forEach((node) => {
         nodesMap.set(node.id, node)
       })
+      this.nodesMap = nodesMap
+    },
+    moveToNode: (nodeId)  => {
+      console.log(nodeId)
+      if (!nodeId) {
+        return
+      }
+      globalNetwork.focus(nodeId, {
+        "animation": true
+      })
+      globalNetwork.selectNodes([nodeId])
     }
+
     // method ends
   },
   mounted() {
@@ -169,6 +214,15 @@ export default {
 </script>
 
 <style scoped>
-#network {
+#btn-setting {
+  position: absolute;
+  right: 9px;
+  top: 9px;
+}
+
+#node-selector {
+  position: absolute;
+  left: 9px;
+  top: 9px;
 }
 </style>
