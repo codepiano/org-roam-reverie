@@ -33,7 +33,8 @@ export default {
     return {
       drawer: false,
       direction: 'rtl',
-      nodesMap: new Map()
+      nodesMap: new Map(),
+      version: 0,
     }
   },
   methods: {
@@ -110,11 +111,11 @@ export default {
         }
         let networkData = response.data
         let nodes = networkData.nodes
-        this.initNodesMap(nodes)
+        this.initNodesMapAndVersion(nodes)
         this.initEdgesMap(networkData.edges)
         this.initNodeValueByEdgesMap(nodes)
         if (networkOption.autoGroup) {
-          this.initNodeGroupByNodeValue(nodes)
+          // this.initNodeGroupByNodeValue(nodes)
         }
         nodeDataset.update(nodes)
         edgeDataset.update(networkData.edges)
@@ -188,12 +189,17 @@ export default {
         }
       })
     },
-    initNodesMap(nodes) {
+    initNodesMapAndVersion(nodes) {
       let nodesMap = new Map()
+      let version = 0
       nodes.forEach((node) => {
+        if (node.fileModifiedTime > version) {
+          version = node.fileModifiedTime
+        }
         nodesMap.set(node.id, node)
       })
       this.nodesMap = nodesMap
+      this.version = version
     },
     moveToNode(nodeId) {
       if (!nodeId) {

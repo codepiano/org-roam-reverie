@@ -28,11 +28,6 @@
                     buffer-file-name)))
           "."))
 
-(defvar org-roam-server-db-last-modification
-  (float-time
-   (file-attribute-modification-time
-    (file-attributes org-roam-db-location))))
-
 (defgroup org-roam-server nil
   "org-roam-server customizable variables."
   :group 'org-roam)
@@ -78,15 +73,15 @@ http://127.0.0.1:`org-roam-server-port`."
              collect (pcase-let* ((`(,pos ,source ,dest ,type ,properties)
                                   row))
                               (list (cons 'pos pos)
-                                        (cons 'from source)
-                                        (cons 'to dest)
-                                        (cons 'type type)
-                                        (cons 'properties properties))))))
+                                    (cons 'from source)
+                                    (cons 'to dest)
+                                    (cons 'type type)
+                                    (cons 'properties properties))))))
 
-(defun org-roam-all-node-list ()
+(defun org-roam-all-node-list (files)
   "Return all nodes stored in the database as a list of key-value objects"
   (let ((rows (org-roam-db-query
-               "SELECT
+               (format "SELECT
   id,
   file,
   \"level\",
@@ -141,14 +136,16 @@ FROM
       tags.tag as tags,
       aliases.alias as aliases,
       '(' || group_concat(RTRIM (refs.\"type\", '\"') || ':' || LTRIM(refs.ref, '\"'), ' ') || ')' as refs
-    FROM nodes
+    FROM nodes 
     LEFT JOIN files ON files.file = nodes.file
     LEFT JOIN tags ON tags.node_id = nodes.id
     LEFT JOIN aliases ON aliases.node_id = nodes.id
-    LEFT JOIN refs ON refs.node_id = nodes.id
-    GROUP BY nodes.id, tags.tag, aliases.alias )
-  GROUP BY id, tags )
-GROUP BY id")))
+    LEFT JOIN refs ON refs.node_id = nodes.id %s
+    GROUP BY nodes.id, tags.tag, aliases.alias)
+  GROUP BY id, tags)
+GROUP BY id" (if (> (length files) 0)
+                 (format " where nodes.file in (%s) " (mapconcat (lambda (x) (format "'%S'" x)) files ","))
+                 "")))))
     (cl-loop for row in rows
              append (pcase-let* ((`(,id ,file ,level ,todo ,pos ,priority ,scheduled ,deadline
                                         ,title ,properties ,olp ,atime ,mtime ,tags ,aliases ,refs)
@@ -157,8 +154,8 @@ GROUP BY id")))
                       (mapcar (lambda (temp-title)
                                   (list (cons 'id id)
                                         (cons 'file file)
-                                        (cons 'fileAtime (car (time-convert atime 1000)))
-                                        (cons 'fileMtime (car (time-convert mtime 1000)))
+                                        (cons 'fileAccessedTime (car (time-millis atime)))
+                                        (cons 'fileModifiedTime (car (time-millis mtime)))
                                         (cons 'level level)
                                         (cons 'point pos)
                                         (cons 'todo todo)
@@ -173,24 +170,74 @@ GROUP BY id")))
                               all-titles)))))
 
 (defun org-roam-gather-options ()
+  "return options"
   (list (cons 'autoGroup org-roam-network-auto-group))
   )
 
+(defun org-roam-recent-node-changes (mtime)
+  "nodes in files that modified time after mtime"
+  (let ((modifiedFiles (mapcar #'car (org-roam-db-query [:select file :from files
+                                          :where (> mtime $s1)] (time-list mtime)))))
+    (if (= (length modifiedFiles) 0)
+      '()
+      (org-roam-all-node-list modifiedFiles)
+      )))
+
+(defun org-roam-node-links (nodes)
+  "根据 nodes，获取 nodes 所有的相关的 links
+   nodes: list类型，元素为 node 对象
+   return: nodes的所有相关的 link"
+  (let* ((nodeIds (vconcat (mapcar #'cdar nodes)))
+         (rows (org-roam-db-query [:select * :from links
+                                          :where (or (in dest $v1) (in source $v1))] nodeIds)))
+    (cl-loop for row in rows
+             collect (pcase-let* ((`(,pos ,source ,dest ,type ,properties)
+                                  row))
+                              (list (cons 'pos pos)
+                                    (cons 'from source)
+                                    (cons 'to dest)
+                                    (cons 'type type)
+                                    (cons 'properties properties))))))
+
+(defun time-millis (time-list)
+  (car (time-convert time-list 1000)))
+
+(defun time-list (milli-number)
+  (time-convert (cons milli-number 1000) 'list))
+
+(defun org-roam-file-max-mtime ()
+  "return max file mtime"
+   (time-millis (caar (org-roam-db-query [:select (funcall max mtime) :from files]))))
+
+(defun org-roam-file-count ()
+  "return file count"
+   (caar (org-roam-db-query [:select (funcall count file) :from files])))
+
 (defservlet* roam-data application/json ()
   (let ((data (json-encode (list (cons 'nodes (org-roam-all-node-list)) (cons 'edges (org-roam-all-link-list))))))
-    (insert (format "%s" data))))
+    (insert (format data))))
 
 (defservlet* roam-node application/json ()
   (let ((data (json-encode (org-roam-all-node-list))))
-    (insert (format "%s" data))))
+    (insert (format data))))
 
 (defservlet* roam-link application/json ()
   (let ((data (json-encode (org-roam-all-link-list))))
-    (insert (format "%s" data))))
+    (insert (format data))))
 
 (defservlet* roam-network-options application/json ()
   (let ((data (json-encode (org-roam-gather-options))))
-    (insert (format "%s" data))))
+    (insert (format data))))
+
+(defservlet* roam-recent-changes application/json (version)
+  (let ((changed-nodes (org-roam-recent-node-changes (string-to-number version))))
+    (insert (json-encode (list (cons 'nodes changed-nodes) (cons 'link (org-roam-node-links changed-nodes)))))))
+
+(defservlet* debugs text/plain ()
+    (insert (format "%s" (org-roam-file-max-mtime))))
+
+(defservlet* roam-check-file-change application/json ()
+    (insert (json-encode (list (cons 'mtime (org-roam-file-max-mtime)) (cons 'file-number (org-roam-file-count))))))
 
 (provide 'org-roam-server)
 
