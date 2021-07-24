@@ -189,7 +189,7 @@ GROUP BY id" (if (> (length files) 0)
    return: nodes的所有相关的 link"
   (let* ((nodeIds (vconcat (mapcar #'cdar nodes)))
          (rows (org-roam-db-query [:select * :from links
-                                          :where (or (in dest $v1) (in source $v1))] nodeIds)))
+                                          :where (in source $v1)] nodeIds)))
     (cl-loop for row in rows
              collect (pcase-let* ((`(,pos ,source ,dest ,type ,properties)
                                   row))
@@ -231,13 +231,13 @@ GROUP BY id" (if (> (length files) 0)
 
 (defservlet* roam-recent-changes application/json (version)
   (let ((changed-nodes (org-roam-recent-node-changes (string-to-number version))))
-    (insert (json-encode (list (cons 'nodes changed-nodes) (cons 'link (org-roam-node-links changed-nodes)))))))
+    (insert (json-encode (list (cons 'nodes changed-nodes) (cons 'links (org-roam-node-links changed-nodes)))))))
 
 (defservlet* debugs text/plain ()
     (insert (format "%s" (org-roam-file-max-mtime))))
 
-(defservlet* roam-check-file-change application/json ()
-    (insert (json-encode (list (cons 'mtime (org-roam-file-max-mtime)) (cons 'file-number (org-roam-file-count))))))
+(defservlet* roam-get-file-changes application/json ()
+    (insert (json-encode (list (cons 'mtime (org-roam-file-max-mtime)) (cons 'fileNumber (org-roam-file-count))))))
 
 (provide 'org-roam-server)
 

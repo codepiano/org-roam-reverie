@@ -4,7 +4,7 @@
     <el-button id="btn-setting" @click="drawer = true" type="primary" icon="el-icon-setting" circle
                size="mini"></el-button>
     <div id="node-selector">
-      <NodeSelector v-on:selectTitle="moveToNode" :nodes-map="nodesMap"/>
+      <NodeSelector ref="nodeSelector" v-on:selectTitle="moveToNode" :nodes-map="nodesMap"/>
     </div>
     <el-drawer title="我是标题" v-model="drawer" :direction="direction">
       <span>我来啦!</span>
@@ -16,10 +16,20 @@
 
 import {DataSet, DataView} from "vis-data/peer";
 import {Network} from "vis-network/peer";
+import {differenceSet} from "@/js/collection"
 import "vis-network/styles/vis-network.css";
-import {getNetworkData, getNetworkOptions} from '@/js/axios'
+import {getNetworkData, getNetworkOptions, getFileChangeInfo, getFileChanges} from '@/js/axios'
+
 import {visNetworkDefault} from '@/js/config'
 import NodeSelector from "@/components/NodeSelector.vue";
+
+/**
+ * 需要更新的数据
+ * nodeDataset vis-network 节点数据
+ * edgeDataset vis-network 连接数据
+ * edgesMap <nodeId, <nodeId>> ，每个节点 id 连接的 id set
+ * this.nodesMap <nodeId, node>，每个节点 id 对应的节点对象
+ */
 
 let nodeDataset = new DataSet();
 let edgeDataset = new DataSet();
@@ -40,7 +50,7 @@ export default {
   methods: {
     // load data, init network
     initNetwork() {
-      // default options
+      // default network options
       let option = {
         height: '100%',
         width: '100%',
@@ -89,7 +99,7 @@ export default {
 
       // let count = 1
       // globalNetwork.on("stabilizationProgress", () => console.log('doing'))
-      // globalNetwork.on("stabilized", () => console.log('done'))
+      globalNetwork.on("stabilized", () => console.log('done'))
       // globalNetwork.on("resize", () => console.log('resize'))
       // globalNetwork.on("initRedraw", () => console.log('initRedraw' + count++))
       // globalNetwork.on("beforeDrawing", () => console.log('beforeDrawing'))
@@ -100,19 +110,17 @@ export default {
       // get options and data from server
       let networkOption = null
       getNetworkOptions.then(response => {
-        if (response.status !== 200) {
-          return
-        }
         networkOption = response.data
         return getNetworkData
       }).then(response => {
-        if (response.status !== 200) {
-          return
-        }
         let networkData = response.data
         let nodes = networkData.nodes
-        this.initNodesMapAndVersion(nodes)
-        this.initEdgesMap(networkData.edges)
+        // init nodesMap and version
+        let {nodesMap, version} = this.initNodesMapAndVersion(nodes)
+        this.nodesMap = nodesMap
+        this.version = version
+        // init edgesMap
+        edgesMap = this.initEdgesMap(networkData.edges)
         this.initNodeValueByEdgesMap(nodes)
         if (networkOption.autoGroup) {
           // this.initNodeGroupByNodeValue(nodes)
@@ -132,13 +140,14 @@ export default {
       }
       nodes.forEach((node) => {
         if (edgesMap.has(node.id)) {
-          node.value = visNetworkDefault.nodeScalingMin + edgesMap.get(node.id).length
+          node.value = visNetworkDefault.nodeScalingMin + edgesMap.get(node.id).size
         } else {
           node.value = visNetworkDefault.nodeScalingMin
         }
       })
     },
     initNodeGroupByNodeValue(nodes) {
+      // init group by direct link number
       nodes = nodes.sort((x, y) => x.value - y.value)
       let group = 0;
       nodes.forEach((node) => {
@@ -173,23 +182,25 @@ export default {
     },
     initEdgesMap(edges) {
       // init node relations
-      edgesMap.clear()
+      let edgesMap = new Map()
       edges.forEach((edge) => {
         let from = edge.from
         let to = edge.to
         if (edgesMap.has(from)) {
-          edgesMap.get(from).push(to)
+          edgesMap.get(from).add(to)
         } else {
-          edgesMap.set(from, [to])
+          edgesMap.set(from, new Set().add(to))
         }
         if (edgesMap.has(to)) {
-          edgesMap.get(to).push(from)
+          edgesMap.get(to).add(from)
         } else {
-          edgesMap.set(to, [from])
+          edgesMap.set(to, new Set().add(from))
         }
       })
+      return edgesMap
     },
     initNodesMapAndVersion(nodes) {
+      // init <id, node> map, set max file modified time
       let nodesMap = new Map()
       let version = 0
       nodes.forEach((node) => {
@@ -198,10 +209,13 @@ export default {
         }
         nodesMap.set(node.id, node)
       })
-      this.nodesMap = nodesMap
-      this.version = version
+      return {
+        nodesMap: nodesMap,
+        version: version
+      }
     },
     moveToNode(nodeId) {
+      // move view, focus specific node
       if (!nodeId) {
         return
       }
@@ -211,17 +225,88 @@ export default {
       globalNetwork.selectNodes([nodeId])
     },
     openRoamProtocol(data) {
+      // open org-roam protocol
       if (data.nodes.length !== 1) {
         return
       }
       let nodeId = data.nodes[0]
       let url = `org-protocol://roam-node?node=${nodeId}`
       window.open(url, "_self")
+    },
+    updateLinks(changedNodes, changedEdges) {
+      // 通过和 node 原 link 数据 diff，来判断新增、删除，同时需要修改对向数据
+      // todo v2.0 改造 org-roam，加入通知机制
+      changedNodes.forEach((node) => {
+        let originEdges = edgesMap.get(node.id)
+        let currentEdges = changedEdges.get(node.id)
+        // 更新node link的另一端
+        // 移除的关系，需要到被移除方的数据中删除
+        let deleted = differenceSet(originEdges, currentEdges)
+        deleted.forEach((id) => {
+          let otherEnd = edgesMap.get(id)
+          if (otherEnd && otherEnd.length > 0) {
+            edgesMap.get(id).delete(node.id)
+          }
+        })
+        // 从edgeDataset中找到 node 不再连接的 edge，并删除
+        let edgesToRemove = edgeDataset.get({
+          filter: (item) => {
+            return item.from === node.id && deleted.has(item.to)
+          }
+        })
+        edgeDataset.remove(edgesToRemove)
+        // 新增的关系，需要到被新增方的数据中增加
+        let added = differenceSet(currentEdges, originEdges)
+        added.forEach((id) => {
+          let otherEnd = edgesMap.get(id)
+          if (otherEnd && otherEnd.length > 0) {
+            edgesMap.get(id).add(node.id)
+          }
+        })
+        // 更新自身
+        edgesMap.set(node.id, currentEdges)
+      })
+    },
+    checkFileChange() {
+      getFileChangeInfo().then(response => {
+        let data = response.data
+        if (data.mtime !== this.version || data.fileNumber !== nodeDataset.length) {
+          // mtime 可以识别新增和修改，fileNumber 可以识别删除
+          this.version = data.mtime
+          return getFileChanges(this.version).then(response => {
+            let nodes = response.data.nodes
+            let links = response.data.links
+            // update edgesMap
+            let changedEdgesMap = this.initEdgesMap(links)
+            nodes.forEach((node) => {
+              // recalculate node id
+              if (changedEdgesMap.has(node.id)) {
+                node.value = visNetworkDefault.nodeScalingMin + edgesMap.get(node.id).length
+              } else {
+                node.value = visNetworkDefault.nodeScalingMin
+              }
+              // update nodesMap
+              this.nodesMap.set(node.id, node)
+            })
+            // update edgesMap
+            this.updateLinks(nodes, changedEdgesMap)
+            // update graph data
+            nodeDataset.update(nodes)
+            edgeDataset.update(links)
+            // refresh node selector options
+            this.$refs.child.NodeSelector.initOptions()
+          })
+        }
+      })
     }
     // method ends
   },
   mounted() {
     this.initNetwork()
+    const timer = setInterval(this.checkFileChange, 10000);
+    this.$once('hook:beforeDestroy', () => {
+      clearInterval(timer)
+    })
   }
 }
 </script>

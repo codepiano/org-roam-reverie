@@ -32,12 +32,9 @@ export default {
     }
   },
   methods: {
-},
-  watch: {
-    nodesMap(val) {
-      console.log("nodesMap changed")
+    initOptions() {
       let options = []
-      for (const x of val.values()) {
+      for (const x of this.nodesMap.values()) {
         options.push({
           label: x.label,
           time: formatTimestamp(x.fileAtime),
@@ -45,6 +42,12 @@ export default {
         })
       }
       this.options = options
+    }
+  },
+  watch: {
+    nodesMap() {
+      console.log("nodesMap changed")
+      this.initOptions()
     }
   }
 }
