@@ -18,7 +18,8 @@ import {DataSet, DataView} from "vis-data/peer";
 import {Network} from "vis-network/peer";
 import {differenceSet} from "@/js/collection"
 import "vis-network/styles/vis-network.css";
-import {getNetworkData, getNetworkOptions, getFileChangeInfo, getFileChanges} from '@/js/axios'
+import {getNetworkData, getNetworkOptions, getFileInfo, getFileChanges} from '@/js/axios'
+import mitt from 'mitt'
 
 import {visNetworkDefault} from '@/js/config'
 import NodeSelector from "@/components/NodeSelector.vue";
@@ -35,6 +36,8 @@ let nodeDataset = new DataSet();
 let edgeDataset = new DataSet();
 let edgesMap = new Map()
 let globalNetwork = null;
+
+const emitter = mitt()
 
 export default {
   name: 'Graph',
@@ -99,7 +102,7 @@ export default {
 
       // let count = 1
       // globalNetwork.on("stabilizationProgress", () => console.log('doing'))
-      globalNetwork.on("stabilized", () => console.log('done'))
+      globalNetwork.on("stabilized", () => console.log('graph physical stabilized'))
       // globalNetwork.on("resize", () => console.log('resize'))
       // globalNetwork.on("initRedraw", () => console.log('initRedraw' + count++))
       // globalNetwork.on("beforeDrawing", () => console.log('beforeDrawing'))
@@ -109,9 +112,9 @@ export default {
 
       // get options and data from server
       let networkOption = null
-      getNetworkOptions.then(response => {
+      getNetworkOptions().then(response => {
         networkOption = response.data
-        return getNetworkData
+        return getNetworkData()
       }).then(response => {
         let networkData = response.data
         let nodes = networkData.nodes
@@ -182,6 +185,9 @@ export default {
     },
     initEdgesMap(edges) {
       // init node relations
+      if (!edges) {
+        return
+      }
       let edgesMap = new Map()
       edges.forEach((edge) => {
         let from = edge.from
@@ -268,14 +274,19 @@ export default {
       })
     },
     checkFileChange() {
-      getFileChangeInfo().then(response => {
+      getFileInfo().then(response => {
         let data = response.data
         if (data.mtime !== this.version || data.fileNumber !== nodeDataset.length) {
           // mtime 可以识别新增和修改，fileNumber 可以识别删除
           this.version = data.mtime
+          console.log(this.version)
           return getFileChanges(this.version).then(response => {
+            console.log(this.response)
             let nodes = response.data.nodes
             let links = response.data.links
+            if (!nodes || nodes.length === 0) {
+              return
+            }
             // update edgesMap
             let changedEdgesMap = this.initEdgesMap(links)
             nodes.forEach((node) => {
@@ -297,15 +308,20 @@ export default {
             this.$refs.child.NodeSelector.initOptions()
           })
         }
+      }).catch((e) => {
+        console.log(e)
       })
     }
     // method ends
   },
   mounted() {
     this.initNetwork()
-    const timer = setInterval(this.checkFileChange, 10000);
-    this.$once('hook:beforeDestroy', () => {
-      clearInterval(timer)
+    const timer = setInterval(this.checkFileChange, 60000);
+    emitter.on('hook:beforeDestroy', () => {
+      if (timer) {
+        console.debug("timer destroyed")
+        clearInterval(timer)
+      }
     })
   }
 }

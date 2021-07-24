@@ -37,7 +37,7 @@ export default {
       for (const x of this.nodesMap.values()) {
         options.push({
           label: x.label,
-          time: formatTimestamp(x.fileAtime),
+          time: formatTimestamp(x.fileModifiedTime),
           value: x.id,
         })
       }
