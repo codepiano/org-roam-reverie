@@ -64,14 +64,14 @@ export default {
           solver: "forceAtlas2Based",
           forceAtlas2Based: {
             gravitationalConstant: -500,
-            centralGravity: 0.005,
+            centralGravity: 0.02,
             springConstant: 0.6,
-            springLength: 60,
+            springLength: 40,
             damping: 1,
             avoidOverlap: 0.5
           },
           maxVelocity: 2000,
-          minVelocity: 60,
+          minVelocity: 20,
           stabilization: {
             enabled: true,
           },
