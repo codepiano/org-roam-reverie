@@ -189,7 +189,7 @@ GROUP BY id" (if (> (length files) 0)
    return: nodes的所有相关的 link"
   (let* ((nodeIds (vconcat (mapcar #'cdar nodes)))
          (rows (org-roam-db-query [:select * :from links
-                                          :where (in source $v1)] nodeIds)))
+                                          :where (and (in source $v1) (= type "id")) ] nodeIds)))
     (cl-loop for row in rows
              collect (pcase-let* ((`(,pos ,source ,dest ,type ,properties)
                                   row))
@@ -207,7 +207,8 @@ GROUP BY id" (if (> (length files) 0)
 
 (defun org-roam-file-max-mtime ()
   "return max file mtime"
-   (time-millis (caar (org-roam-db-query [:select (funcall max mtime) :from files]))))
+  (let ((mtimes (mapcar (lambda (x) (time-millis (car x))) (org-roam-db-query [:select mtime :from files]))))
+    (seq-reduce #'max mtimes 0)))
 
 (defun org-roam-file-count ()
   "return file count"

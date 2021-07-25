@@ -57,7 +57,9 @@ export default {
       let option = {
         height: '100%',
         width: '100%',
-        nodes: {shape: "dot"},
+        nodes: {
+          shape: "dot"
+        },
         interaction: {hover: true},
         layout: {improvedLayout: true},
         physics: {
@@ -66,7 +68,7 @@ export default {
             gravitationalConstant: -500,
             centralGravity: 0.02,
             springConstant: 0.6,
-            springLength: 40,
+            springLength: 80,
             damping: 1,
             avoidOverlap: 0.5
           },
@@ -242,9 +244,15 @@ export default {
     updateLinks(changedNodes, changedEdges) {
       // 通过和 node 原 link 数据 diff，来判断新增、删除，同时需要修改对向数据
       // todo v2.0 改造 org-roam，加入通知机制
+      if (!changedEdges) {
+        return
+      }
       changedNodes.forEach((node) => {
         let originEdges = edgesMap.get(node.id)
         let currentEdges = changedEdges.get(node.id)
+        if (!currentEdges) {
+          return
+        }
         // 更新node link的另一端
         // 移除的关系，需要到被移除方的数据中删除
         let deleted = differenceSet(originEdges, currentEdges)
@@ -291,21 +299,25 @@ export default {
             let changedEdgesMap = this.initEdgesMap(links)
             nodes.forEach((node) => {
               // recalculate node id
-              if (changedEdgesMap.has(node.id)) {
-                node.value = visNetworkDefault.nodeScalingMin + edgesMap.get(node.id).length
-              } else {
-                node.value = visNetworkDefault.nodeScalingMin
+              if (changedEdgesMap) {
+                if (changedEdgesMap.has(node.id)) {
+                  node.value = visNetworkDefault.nodeScalingMin + changedEdgesMap.get(node.id).length
+                } else {
+                  node.value = visNetworkDefault.nodeScalingMin
+                }
               }
               // update nodesMap
               this.nodesMap.set(node.id, node)
             })
-            // update edgesMap
-            this.updateLinks(nodes, changedEdgesMap)
             // update graph data
             nodeDataset.update(nodes)
-            edgeDataset.update(links)
+            if (links) {
+              edgeDataset.update(links)
+            }
+            // update edgesMap
+            this.updateLinks(nodes, changedEdgesMap)
             // refresh node selector options
-            this.$refs.child.NodeSelector.initOptions()
+            // this.$refs.NodeSelector.initOptions()
           })
         }
       }).catch((e) => {
