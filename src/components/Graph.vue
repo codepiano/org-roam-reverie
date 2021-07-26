@@ -37,6 +37,9 @@ let edgeDataset = new DataSet();
 let edgesMap = new Map()
 let globalNetwork = null;
 
+window.node = nodeDataset
+window.edge = edgeDataset
+
 const emitter = mitt()
 
 export default {
@@ -89,6 +92,7 @@ export default {
             edges: edgeDataset
           },
           option);
+      window.network = globalNetwork
 
       globalNetwork.once('startStabilizing', () => {
         let scaleOption = {scale: 0.05};
@@ -253,6 +257,9 @@ export default {
         if (!currentEdges) {
           return
         }
+        if (!originEdges) {
+          originEdges = new Set()
+        }
         // 更新node link的另一端
         // 移除的关系，需要到被移除方的数据中删除
         let deleted = differenceSet(originEdges, currentEdges)
@@ -268,7 +275,9 @@ export default {
             return item.from === node.id && deleted.has(item.to)
           }
         })
-        edgeDataset.remove(edgesToRemove)
+        if (edgesToRemove.length > 0) {
+          edgeDataset.remove(edgesToRemove)
+        }
         // 新增的关系，需要到被新增方的数据中增加
         let added = differenceSet(currentEdges, originEdges)
         added.forEach((id) => {
@@ -286,10 +295,10 @@ export default {
         let data = response.data
         if (data.mtime !== this.version || data.fileNumber !== nodeDataset.length) {
           // mtime 可以识别新增和修改，fileNumber 可以识别删除
+          let clientVersion = this.version
           this.version = data.mtime
-          console.log(this.version)
-          return getFileChanges(this.version).then(response => {
-            console.log(this.response)
+          return getFileChanges(clientVersion).then(response => {
+            console.log(response)
             let nodes = response.data.nodes
             let links = response.data.links
             if (!nodes || nodes.length === 0) {
@@ -299,13 +308,6 @@ export default {
             let changedEdgesMap = this.initEdgesMap(links)
             nodes.forEach((node) => {
               // recalculate node id
-              if (changedEdgesMap) {
-                if (changedEdgesMap.has(node.id)) {
-                  node.value = visNetworkDefault.nodeScalingMin + changedEdgesMap.get(node.id).length
-                } else {
-                  node.value = visNetworkDefault.nodeScalingMin
-                }
-              }
               // update nodesMap
               this.nodesMap.set(node.id, node)
             })
@@ -317,7 +319,7 @@ export default {
             // update edgesMap
             this.updateLinks(nodes, changedEdgesMap)
             // refresh node selector options
-            // this.$refs.NodeSelector.initOptions()
+            this.$refs.nodeSelector.initOptions()
           })
         }
       }).catch((e) => {

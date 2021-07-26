@@ -94,7 +94,7 @@ http://127.0.0.1:`org-roam-server-port`."
   properties ,
   olp,
   atime,
-  mtime,
+  modifiedTime,
   '(' || group_concat(tags, ' ') || ')' as tags,
   aliases,
   refs
@@ -113,7 +113,7 @@ FROM
     properties ,
     olp,
     atime,
-    mtime,
+    modifiedTime,
     tags,
     '(' || group_concat(aliases, ' ') || ')' as aliases,
     refs
@@ -132,7 +132,7 @@ FROM
       nodes.properties as properties,
       nodes.olp as olp,
       files.atime as atime,
-      files.mtime as mtime,
+      files.modifiedTime as modifiedTime,
       tags.tag as tags,
       aliases.alias as aliases,
       '(' || group_concat(RTRIM (refs.\"type\", '\"') || ':' || LTRIM(refs.ref, '\"'), ' ') || ')' as refs
@@ -148,14 +148,14 @@ GROUP BY id" (if (> (length files) 0)
                  "")))))
     (cl-loop for row in rows
              append (pcase-let* ((`(,id ,file ,level ,todo ,pos ,priority ,scheduled ,deadline
-                                        ,title ,properties ,olp ,atime ,mtime ,tags ,aliases ,refs)
+                                        ,title ,properties ,olp ,atime ,modifiedTime ,tags ,aliases ,refs)
                                   row)
                                  (all-titles (cons title aliases)))
                       (mapcar (lambda (temp-title)
                                   (list (cons 'id id)
                                         (cons 'file file)
-                                        (cons 'fileAccessedTime  (time-millis atime))
-                                        (cons 'fileModifiedTime  (time-millis mtime))
+                                        (cons 'fileAccessedTime (time-millis atime))
+                                        (cons 'fileModifiedTime modifiedTime)
                                         (cons 'level level)
                                         (cons 'point pos)
                                         (cons 'todo todo)
@@ -174,14 +174,13 @@ GROUP BY id" (if (> (length files) 0)
   (list (cons 'autoGroup org-roam-network-auto-group))
   )
 
-(defun org-roam-recent-node-changes (mtime)
+(defun org-roam-recent-node-changes (modifiedTime)
   "nodes in files that modified time after mtime"
   (let ((modifiedFiles (mapcar #'car (org-roam-db-query [:select file :from files
-                                          :where (> mtime $s1)] (time-list mtime)))))
+                                          :where (> modifiedTime $s1)] modifiedTime))))
     (if (= (length modifiedFiles) 0)
       '()
-      (org-roam-all-node-list modifiedFiles)
-      )))
+      (org-roam-all-node-list modifiedFiles))))
 
 (defun org-roam-node-links (nodes)
   "根据 nodes，获取 nodes 所有的相关的 links
@@ -207,12 +206,11 @@ GROUP BY id" (if (> (length files) 0)
 
 (defun org-roam-file-max-mtime ()
   "return max file mtime"
-  (let ((mtimes (mapcar (lambda (x) (time-millis (car x))) (org-roam-db-query [:select mtime :from files]))))
-    (seq-reduce #'max mtimes 0)))
+    (caar (org-roam-db-query "select max(modifiedTime) from files")))
 
 (defun org-roam-file-count ()
   "return file count"
-   (caar (org-roam-db-query [:select (funcall count file) :from files])))
+   (caar (org-roam-db-query [:select (funcall count id) :from nodes])))
 
 (defservlet* roam-data application/json ()
   (let ((data (json-encode (list (cons 'nodes (org-roam-all-node-list '())) (cons 'edges (org-roam-all-link-list))))))
@@ -233,9 +231,6 @@ GROUP BY id" (if (> (length files) 0)
 (defservlet* roam-recent-changes application/json (version)
   (let ((changed-nodes (org-roam-recent-node-changes (string-to-number version))))
     (insert (json-encode (list (cons 'nodes changed-nodes) (cons 'links (org-roam-node-links changed-nodes)))))))
-
-(defservlet* debugs text/plain ()
-    (insert (format "%s" (org-roam-file-max-mtime))))
 
 (defservlet* roam-get-file-changes application/json ()
     (insert (json-encode (list (cons 'mtime (org-roam-file-max-mtime)) (cons 'fileNumber (org-roam-file-count))))))
