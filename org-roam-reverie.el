@@ -43,6 +43,13 @@ http://`org-roam-server-host`:`org-roam-server-port`."
   :group 'org-roam-server
   :type 'boolean)
 
+(defcustom org-roam-network-label-wrap-length 15
+  "auto group nodes by edge"
+  :group 'org-roam-server
+  :type 'integer)
+
+
+
 (defcustom org-roam-server-port 8080
   "Server port.
 http://127.0.0.1:`org-roam-server-port`."
@@ -162,7 +169,7 @@ GROUP BY id" (if (> (length files) 0)
                                         (cons 'priority priority)
                                         (cons 'scheduled scheduled)
                                         (cons 'deadline deadline)
-                                        (cons 'label temp-title)
+                                        (cons 'title temp-title)
                                         (cons 'properties properties)
                                         (cons 'olp olp)
                                         (cons 'tags tags)
@@ -171,7 +178,9 @@ GROUP BY id" (if (> (length files) 0)
 
 (defun org-roam-gather-options ()
   "return options"
-  (list (cons 'autoGroup org-roam-network-auto-group))
+  (list (cons 'autoGroup org-roam-network-auto-group)
+        (cons 'labelWrapLength org-roam-network-label-wrap-length)
+        )
   )
 
 (defun org-roam-recent-node-changes (modifiedTime)
@@ -231,6 +240,12 @@ GROUP BY id" (if (> (length files) 0)
 (defservlet* roam-recent-changes application/json (version)
   (let ((changed-nodes (org-roam-recent-node-changes (string-to-number version))))
     (insert (json-encode (list (cons 'nodes changed-nodes) (cons 'links (org-roam-node-links changed-nodes)))))))
+
+(defservlet* debugs text/plain ()
+  (let ((rows (org-roam-db-query [:select [file mtime] :from files
+                              :where (and (is-not mtime nil) (is modifiedTime nil))])))
+
+    (insert (format "%s" (org-roam-file-max-mtime)))))
 
 (defservlet* roam-get-file-changes application/json ()
     (insert (json-encode (list (cons 'mtime (org-roam-file-max-mtime)) (cons 'fileNumber (org-roam-file-count))))))

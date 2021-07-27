@@ -14,13 +14,16 @@
 
 <script>
 
+import mitt from 'mitt'
+
+import "vis-network/styles/vis-network.css";
 import {DataSet, DataView} from "vis-data/peer";
 import {Network} from "vis-network/peer";
-import {differenceSet} from "@/js/collection"
-import "vis-network/styles/vis-network.css";
 import {getNetworkData, getNetworkOptions, getFileInfo, getFileChanges} from '@/js/axios'
-import mitt from 'mitt'
+
+import {differenceSet} from "@/js/collection"
 import {formatTimestamp} from '@/js/datetime.js'
+import {linewrap} from '@/js/string.js'
 
 import {visNetworkDefault} from '@/js/config'
 import NodeSelector from "@/components/NodeSelector.vue";
@@ -51,6 +54,7 @@ export default {
       drawer: false,
       direction: 'rtl',
       nodesMap: new Map(),
+      userOptions: {},
       version: 0,
     }
   },
@@ -72,7 +76,7 @@ export default {
             gravitationalConstant: -500,
             centralGravity: 0.02,
             springConstant: 0.6,
-            springLength: 80,
+            springLength: 100,
             damping: 1,
             avoidOverlap: 0.5
           },
@@ -118,9 +122,10 @@ export default {
       // globalNetwork.on("animationFinished", () => console.log('animationFinished'))
 
       // get options and data from server
-      let networkOption = null
+      let userOptions = null
       getNetworkOptions().then(response => {
-        networkOption = response.data
+        userOptions = response.data
+        this.userOptions = userOptions
         return getNetworkData()
       }).then(response => {
         let networkData = response.data
@@ -132,7 +137,7 @@ export default {
         // init edgesMap
         edgesMap = this.initEdgesMap(networkData.edges)
         this.initNodeValueByEdgesMap(nodes)
-        if (networkOption.autoGroup) {
+        if (userOptions.autoGroup) {
           // this.initNodeGroupByNodeValue(nodes)
         }
         nodeDataset.update(nodes)
@@ -220,13 +225,24 @@ export default {
         if (node.fileModifiedTime > version) {
           version = node.fileModifiedTime
         }
-        node.fileModifiedTimeString = formatTimestamp(node.fileModifiedTime),
+        this.processNodeData(node)
         nodesMap.set(node.id, node)
       })
       return {
         nodesMap: nodesMap,
         version: version
       }
+    },
+    processNodeData(node) {
+      node.fileModifiedTimeString = formatTimestamp(node.fileModifiedTime)
+      // 节点标签折行
+      let wrapLength = this.userOptions.labelWrapLength
+      if (wrapLength > 0) {
+        node.label = linewrap(node.title, wrapLength)
+      }else{
+        node.label = node.title
+      }
+      return node
     },
     moveToNode(nodeId) {
       // move view, focus specific node
