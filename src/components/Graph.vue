@@ -20,6 +20,7 @@ import {differenceSet} from "@/js/collection"
 import "vis-network/styles/vis-network.css";
 import {getNetworkData, getNetworkOptions, getFileInfo, getFileChanges} from '@/js/axios'
 import mitt from 'mitt'
+import {formatTimestamp} from '@/js/datetime.js'
 
 import {visNetworkDefault} from '@/js/config'
 import NodeSelector from "@/components/NodeSelector.vue";
@@ -219,6 +220,7 @@ export default {
         if (node.fileModifiedTime > version) {
           version = node.fileModifiedTime
         }
+        node.fileModifiedTimeString = formatTimestamp(node.fileModifiedTime),
         nodesMap.set(node.id, node)
       })
       return {

@@ -3,6 +3,7 @@
       class="node-selector"
       v-model="value"
       filterable
+      :height=680
       size="medium"
       :options="options"
       clearable
@@ -18,7 +19,6 @@
 </template>
 
 <script>
-import {formatTimestamp} from '@/js/datetime.js'
 
 export default {
   name: "NodeSelector",
@@ -32,12 +32,12 @@ export default {
     }
   },
   methods: {
-    initOptions() {
+    initOptions(added) {
       let options = []
       for (const x of this.nodesMap.values()) {
         options.push({
           label: x.label,
-          time: formatTimestamp(x.fileModifiedTime),
+          time: x.fileModifiedTimeString,
           value: x.id,
         })
       }
