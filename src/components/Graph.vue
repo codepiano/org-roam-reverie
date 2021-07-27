@@ -20,10 +20,12 @@ import "vis-network/styles/vis-network.css";
 import {DataSet, DataView} from "vis-data/peer";
 import {Network} from "vis-network/peer";
 import {getNetworkData, getNetworkOptions, getFileInfo, getFileChanges} from '@/js/axios'
+import {merge as _merge} from "lodash/Object"
 
 import {differenceSet} from "@/js/collection"
 import {formatTimestamp} from '@/js/datetime.js'
 import {linewrap} from '@/js/string.js'
+import {propertiesExtend} from '@/js/properties.js'
 
 import {visNetworkDefault} from '@/js/config'
 import NodeSelector from "@/components/NodeSelector.vue";
@@ -68,6 +70,12 @@ export default {
         nodes: {
           shape: "dot"
         },
+        edges: {
+          color: {
+            inherit: "both"
+          },
+          smooth: {type: "continuous"}
+        },
         interaction: {hover: true},
         layout: {improvedLayout: true},
         physics: {
@@ -86,9 +94,6 @@ export default {
             enabled: true,
           },
           timestep: 0.3,
-        },
-        edges: {
-          smooth: {type: "continuous"}
         }
       }
       let view = new DataView(nodeDataset, {})
@@ -126,6 +131,11 @@ export default {
       getNetworkOptions().then(response => {
         userOptions = response.data
         this.userOptions = userOptions
+        if (userOptions.visNetworkOptions) {
+          let visOptions = JSON.parse(userOptions.visNetworkOptions)
+          _merge(option, visOptions)
+          console.log(option)
+        }
         return getNetworkData()
       }).then(response => {
         let networkData = response.data
@@ -239,10 +249,21 @@ export default {
       let wrapLength = this.userOptions.labelWrapLength
       if (wrapLength > 0) {
         node.label = linewrap(node.title, wrapLength)
-      }else{
+      } else {
         node.label = node.title
       }
+      this.processProperties(node)
       return node
+    },
+    processProperties(node) {
+      if (node.properties) {
+        if (node.id === "3BACC352-D657-44F9-8DD5-83817942D38C") {
+          Object.entries(node.properties).forEach((entry) => {
+            let [key, value] = entry
+            propertiesExtend(node, key, value)
+          })
+        }
+      }
     },
     moveToNode(nodeId) {
       // move view, focus specific node
@@ -311,6 +332,9 @@ export default {
     checkFileChange() {
       getFileInfo().then(response => {
         let data = response.data
+        if (this.version === 0) {
+          return
+        }
         if (data.mtime !== this.version || data.fileNumber !== nodeDataset.length) {
           // mtime 可以识别新增和修改，fileNumber 可以识别删除
           let clientVersion = this.version
@@ -325,8 +349,7 @@ export default {
             // update edgesMap
             let changedEdgesMap = this.initEdgesMap(links)
             nodes.forEach((node) => {
-              // recalculate node id
-              // update nodesMap
+              this.processNodeData(node)
               this.nodesMap.set(node.id, node)
             })
             // update graph data

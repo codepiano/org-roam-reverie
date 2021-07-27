@@ -44,11 +44,14 @@ http://`org-roam-server-host`:`org-roam-server-port`."
   :type 'boolean)
 
 (defcustom org-roam-network-label-wrap-length 15
-  "auto group nodes by edge"
+  "node label wrap length"
   :group 'org-roam-server
   :type 'integer)
 
-
+(defcustom org-roam-network-vis-options "{}"
+  "node label wrap length"
+  :group 'org-roam-server
+  :type 'string)
 
 (defcustom org-roam-server-port 8080
   "Server port.
@@ -180,6 +183,7 @@ GROUP BY id" (if (> (length files) 0)
   "return options"
   (list (cons 'autoGroup org-roam-network-auto-group)
         (cons 'labelWrapLength org-roam-network-label-wrap-length)
+        (cons 'visNetworkOptions org-roam-network-vis-options)
         )
   )
 

@@ -10,7 +10,26 @@ org-roam v2 做了一些很好的改动，但是作为一个核心功能提供�
 ## v1.0.0
 
 - [√] v1.0.0 插件化改造，完成网络图绘制，动态更新功能，节点定位功能
-- [] v1.0.1 完成通过properties自定义节点属性，笔记标签自动折行
+- [√] v1.0.1 完成通过properties自定义节点属性，笔记标签自动折行
 - [] v1.0.2 完成所有笔记信息在前端进行展示和预览
 - [] v1.0.3 优化el-select-v2 组件更新
 - [] v1.1.0 整合 org-roam，在保持兼容性的基础上，改造数据库结构
+
+# 功能
+## 自定义节点属性
+在节点的 properties 中添加属性定制节点的形状、颜色等
+
+```
+:PROPERTIES:
+:ID:       3BACC352-D657-44F9-8DD5-83817942D38C
+:reverie.node.shape: star
+:reverie.node.size: 40
+:reverie.node.color: #ED553B
+:END:
+```
+
+### 目前支持的属性列表
+
+- reverie.node.shape 节点形状，枚举值： diamond, dot, star, triangle, triangleDown, hexagon, square and icon.
+- reverie.node.size 节点大小，10 以上数字
+- reverie.node.color 颜色，#ED553B、red、rgba(120,110,119)
