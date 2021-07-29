@@ -3,12 +3,9 @@
     <div id="network"/>
     <el-button id="btn-setting" @click="drawer = true" type="primary" icon="el-icon-setting" circle
                size="mini"></el-button>
-    <el-button id="btn-viewer" @click="nodeViewerVisible = true" type="primary" icon="el-icon-notebook-1" circle
-               size="mini"></el-button>
     <div id="node-selector">
       <NodeSelector ref="nodeSelector" v-on:selectTitle="moveToNode"/>
     </div>
-    <NodeViewer v-on:nodeViewerClose="nodeViewerVisible = false" :visible="nodeViewerVisible"/>
     <el-drawer title="我是标题" v-model="drawer" :direction="direction">
       <span>我来啦!</span>
     </el-drawer>
@@ -62,7 +59,6 @@ export default {
       drawer: false,
       direction: 'rtl',
       userOptions: {},
-      nodeViewerVisible: false,
       version: 0,
     }
   },

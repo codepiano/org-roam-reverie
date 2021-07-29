@@ -1,11 +1,12 @@
 <template>
   <el-select-v2
-      class="node-selector"
       v-model="value"
       filterable
       :height=680
       size="medium"
       :options="options"
+      style="width: 400px;"
+      popper-class="popper"
       clearable
       v-on:change="$emit('selectTitle', value)"
       placeholder="请选择">
@@ -27,6 +28,7 @@ export default {
     return {
       options: [],
       value: '',
+      unwatchNodesChange: null,
     }
   },
   methods: {
@@ -47,12 +49,21 @@ export default {
     this.$store.watch((state) => state.nodesData.nodesMapChanged, () => {
       this.initOptions()
     })
-  }
+  },
+  beforeUnmount() {
+    if (this.unwatchNodesChange) {
+      this.unwatchNodesChange()
+    }
+  },
 }
 </script>
 
-<style scoped>
-.node-selector {
+<style>
+.popper {
   width: 400px;
+}
+
+.popper .el-select-dropdown__list {
+  width: 400px !important;
 }
 </style>

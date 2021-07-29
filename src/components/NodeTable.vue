@@ -1,9 +1,21 @@
 <template>
   <div>
     <el-table size="small" stripe :data="currentPageData">
-      <el-table-column property="createDate" label="创建日期" width="150"></el-table-column>
+      <el-table-column property="createdTimeString" label="创建日期" width="150"></el-table-column>
       <el-table-column property="title" label="标题"></el-table-column>
-      <el-table-column property="properties" label="属性"></el-table-column>
+      <el-table-column label="标签">
+        <template #default="scope">
+          <el-tag size="mini" v-for="tag in scope.row.tags">{{ tag }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作">
+        <template #default="scope">
+          <el-button
+              size="mini"
+              @click="handleView(scope.$index, scope.row)">编辑
+          </el-button>
+        </template>
+      </el-table-column>
     </el-table>
     <el-pagination
         @size-change="handleSizeChange"
@@ -29,7 +41,8 @@ export default {
       gridData: [],
       pageSize: 50,
       currentPage: 1,
-      currentPageData: []
+      currentPageData: [],
+      unwatchNodesChange: null
     }
   },
   methods: {
@@ -37,12 +50,7 @@ export default {
       let gridData = []
       let nodesMap = this.$store.state.nodesData.nodesMap
       for (const x of nodesMap.values()) {
-        gridData.push({
-          createDate: x.createdTimeString,
-          title: x.title,
-          aliases: x.aliases,
-          properties: x.properties
-        })
+        gridData.push(x)
       }
       this.gridData = gridData
       this.currentPageData = gridData.slice(0, this.pageSize)
@@ -66,6 +74,9 @@ export default {
       this.pageSize = size
       let currentPage = Math.round(currentPageStart / size)
       this.handleCurrentChange(currentPage)
+    },
+    handleView(index, node) {
+
     }
   },
   computed: {
@@ -75,10 +86,15 @@ export default {
   },
   created() {
     this.initGridData()
-    this.$store.watch((state) => state.nodesData.nodesMapChanged, () => {
+    this.unwatchNodesChange = this.$store.watch((state) => state.nodesData.nodesMapChanged, () => {
       this.initGridData()
     })
-  }
+  },
+  beforeUnmount() {
+    if (this.unwatchNodesChange) {
+      this.unwatchNodesChange()
+    }
+  },
 }
 </script>
 

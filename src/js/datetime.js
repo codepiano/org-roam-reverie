@@ -5,5 +5,5 @@ export const timestampToLocalString = (timestamp) => {
 }
 
 export const formatTimestamp = (timestamp) => {
-    format(timestamp, "YYYY-MM-dd HH:mm:ss")
+    return format(timestamp, "yyyy-MM-dd HH:mm:ss")
 }
