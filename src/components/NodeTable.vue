@@ -1,0 +1,87 @@
+<template>
+  <div>
+    <el-table size="small" stripe :data="currentPageData">
+      <el-table-column property="createDate" label="创建日期" width="150"></el-table-column>
+      <el-table-column property="title" label="标题"></el-table-column>
+      <el-table-column property="properties" label="属性"></el-table-column>
+    </el-table>
+    <el-pagination
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :current-page="currentPage"
+        :page-sizes="[100, 200, 300, 400]"
+        :page-size="pageSize"
+        :pager-count=17
+        hide-on-single-page
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        :total="totalSize">
+    </el-pagination>
+  </div>
+</template>
+
+<script>
+
+export default {
+  name: "NodeTable",
+  data() {
+    return {
+      gridData: [],
+      pageSize: 50,
+      currentPage: 1,
+      currentPageData: []
+    }
+  },
+  methods: {
+    initGridData(added) {
+      let gridData = []
+      let nodesMap = this.$store.state.nodesData.nodesMap
+      for (const x of nodesMap.values()) {
+        gridData.push({
+          createDate: x.createdTimeString,
+          title: x.title,
+          aliases: x.aliases,
+          properties: x.properties
+        })
+      }
+      this.gridData = gridData
+      this.currentPageData = gridData.slice(0, this.pageSize)
+    },
+    handleCurrentChange(val) {
+      console.log(this.currentPage)
+      let start = (val - 1) * this.pageSize
+      if (start < 0 || start > this.gridData.length) {
+        start = 0
+      }
+      let end = start + this.pageSize
+      if (end > this.gridData.length) {
+        end = this.gridData.length
+      }
+      this.currentPage = val
+      this.currentPageData = this.gridData.slice(start, end)
+    },
+    handleSizeChange(size) {
+      console.log("size change")
+      let currentPageStart = this.pageSize * (this.currentPage - 1)
+      this.pageSize = size
+      let currentPage = Math.round(currentPageStart / size)
+      this.handleCurrentChange(currentPage)
+    }
+  },
+  computed: {
+    totalSize() {
+      return this.gridData.length
+    }
+  },
+  created() {
+    this.initGridData()
+    this.$store.watch((state) => state.nodesData.nodesMapChanged, () => {
+      this.initGridData()
+    })
+  }
+}
+</script>
+
+<style scoped>
+
+</style>

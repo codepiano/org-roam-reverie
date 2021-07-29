@@ -103,6 +103,7 @@ http://127.0.0.1:`org-roam-server-port`."
   title,
   properties ,
   olp,
+  createdTime,
   atime,
   modifiedTime,
   '(' || group_concat(tags, ' ') || ')' as tags,
@@ -122,6 +123,7 @@ FROM
     title,
     properties ,
     olp,
+    createdTime,
     atime,
     modifiedTime,
     tags,
@@ -141,6 +143,7 @@ FROM
       nodes.title as title,
       nodes.properties as properties,
       nodes.olp as olp,
+      nodes.createdTime as createdTime,
       files.atime as atime,
       files.modifiedTime as modifiedTime,
       tags.tag as tags,
@@ -157,27 +160,26 @@ GROUP BY id" (if (> (length files) 0)
                  (format " where nodes.file in (%s) " (mapconcat (lambda (x) (format "'%S'" x)) files ","))
                  "")))))
     (cl-loop for row in rows
-             append (pcase-let* ((`(,id ,file ,level ,todo ,pos ,priority ,scheduled ,deadline
-                                        ,title ,properties ,olp ,atime ,modifiedTime ,tags ,aliases ,refs)
-                                  row)
-                                 (all-titles (cons title aliases)))
-                      (mapcar (lambda (temp-title)
-                                  (list (cons 'id id)
-                                        (cons 'file file)
-                                        (cons 'fileAccessedTime (time-millis atime))
-                                        (cons 'fileModifiedTime modifiedTime)
-                                        (cons 'level level)
-                                        (cons 'point pos)
-                                        (cons 'todo todo)
-                                        (cons 'priority priority)
-                                        (cons 'scheduled scheduled)
-                                        (cons 'deadline deadline)
-                                        (cons 'title temp-title)
-                                        (cons 'properties properties)
-                                        (cons 'olp olp)
-                                        (cons 'tags tags)
-                                        (cons 'refs refs)))
-                              all-titles)))))
+             collect (pcase-let* ((`(,id ,file ,level ,todo ,pos ,priority ,scheduled ,deadline
+                                        ,title ,properties ,olp ,createdTime ,atime ,modifiedTime ,tags ,aliases ,refs)
+                                  row))
+                          (list (cons 'id id)
+                                (cons 'file file)
+                                (cons 'fileAccessedTime (time-millis atime))
+                                (cons 'fileModifiedTime modifiedTime)
+                                (cons 'level level)
+                                (cons 'point pos)
+                                (cons 'todo todo)
+                                (cons 'priority priority)
+                                (cons 'scheduled scheduled)
+                                (cons 'deadline deadline)
+                                (cons 'title title)
+                                (cons 'aliases aliases)
+                                (cons 'properties properties)
+                                (cons 'olp olp)
+                                (cons 'createdTime createdTime)
+                                (cons 'tags tags)
+                                (cons 'refs refs))))))
 
 (defun org-roam-gather-options ()
   "return options"

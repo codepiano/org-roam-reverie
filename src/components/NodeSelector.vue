@@ -22,9 +22,7 @@
 
 export default {
   name: "NodeSelector",
-  props: {
-    nodesMap: Object
-  },
+  emits: ['selectTitle'],
   data() {
     return {
       options: [],
@@ -34,7 +32,8 @@ export default {
   methods: {
     initOptions(added) {
       let options = []
-      for (const x of this.nodesMap.values()) {
+      let nodesMap = this.$store.state.nodesData.nodesMap
+      for (const x of nodesMap.values()) {
         options.push({
           label: x.label,
           time: x.fileModifiedTimeString,
@@ -44,11 +43,10 @@ export default {
       this.options = options
     }
   },
-  watch: {
-    nodesMap() {
-      console.log("nodesMap changed")
+  created() {
+    this.$store.watch((state) => state.nodesData.nodesMapChanged, () => {
       this.initOptions()
-    }
+    })
   }
 }
 </script>

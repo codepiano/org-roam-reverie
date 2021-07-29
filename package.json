@@ -7,11 +7,13 @@
   },
   "dependencies": {
     "axios": "^0.21.1",
+    "date-fns": "^2.23.0",
     "element-plus": "latest",
     "lodash": "^4.17.21",
     "mitt": "^2.1.0",
     "vis-network": "^9.0.4",
-    "vue": "^3.0.5"
+    "vue": "^3.0.5",
+    "vuex": "^4.0.2"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^1.0.4",

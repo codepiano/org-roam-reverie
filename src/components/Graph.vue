@@ -3,9 +3,12 @@
     <div id="network"/>
     <el-button id="btn-setting" @click="drawer = true" type="primary" icon="el-icon-setting" circle
                size="mini"></el-button>
+    <el-button id="btn-viewer" @click="nodeViewerVisible = true" type="primary" icon="el-icon-notebook-1" circle
+               size="mini"></el-button>
     <div id="node-selector">
-      <NodeSelector ref="nodeSelector" v-on:selectTitle="moveToNode" :nodes-map="nodesMap"/>
+      <NodeSelector ref="nodeSelector" v-on:selectTitle="moveToNode"/>
     </div>
+    <NodeViewer v-on:nodeViewerClose="nodeViewerVisible = false" :visible="nodeViewerVisible"/>
     <el-drawer title="我是标题" v-model="drawer" :direction="direction">
       <span>我来啦!</span>
     </el-drawer>
@@ -28,14 +31,17 @@ import {linewrap} from '@/js/string.js'
 import {propertiesExtend} from '@/js/properties.js'
 
 import {visNetworkDefault} from '@/js/config'
+import * as mutationConst from "@/js/store_mutation_const"
+
 import NodeSelector from "@/components/NodeSelector.vue";
+import NodeViewer from "@/components/NodeViewer.vue";
 
 /**
  * 需要更新的数据
  * nodeDataset vis-network 节点数据
  * edgeDataset vis-network 连接数据
  * edgesMap <nodeId, <nodeId>> ，每个节点 id 连接的 id set
- * this.nodesMap <nodeId, node>，每个节点 id 对应的节点对象
+ * $store.nodesMap <nodeId, node>，每个节点 id 对应的节点对象
  */
 
 let nodeDataset = new DataSet();
@@ -50,13 +56,13 @@ const emitter = mitt()
 
 export default {
   name: 'Graph',
-  components: {NodeSelector},
+  components: {NodeViewer, NodeSelector},
   data() {
     return {
       drawer: false,
       direction: 'rtl',
-      nodesMap: new Map(),
       userOptions: {},
+      nodeViewerVisible: false,
       version: 0,
     }
   },
@@ -142,7 +148,7 @@ export default {
         let nodes = networkData.nodes
         // init nodesMap and version
         let {nodesMap, version} = this.initNodesMapAndVersion(nodes)
-        this.nodesMap = nodesMap
+        this.$store.commit(mutationConst.SetNodeMap, nodesMap)
         this.version = version
         // init edgesMap
         edgesMap = this.initEdgesMap(networkData.edges)
@@ -175,6 +181,7 @@ export default {
       // init group by direct link number
       nodes = nodes.sort((x, y) => x.value - y.value)
       let group = 0;
+      let nodesMap = this.$store.state.nodesData.nodesMap
       nodes.forEach((node) => {
         if (!node.group) {
           let connectedNodeIds = edgesMap.get(node.id)
@@ -183,16 +190,16 @@ export default {
             let maxNodeValue = 0
             let maxNodeId = null
             connectedNodeIds.forEach((nodeId) => {
-              if (!this.nodesMap.has(nodeId)) {
+              if (!nodesMap.has(nodeId)) {
                 return
               }
-              let connectedNode = this.nodesMap.get(nodeId)
+              let connectedNode = nodesMap.get(nodeId)
               if (connectedNode.value > maxNodeValue) {
                 maxNodeValue = connectedNode.value
                 maxNodeId = connectedNode.id
               }
             })
-            let maxNode = this.nodesMap.get(maxNodeId)
+            let maxNode = nodesMap.get(maxNodeId)
             if (!maxNode.group) {
               maxNode.group = group
               group += 1
@@ -245,6 +252,7 @@ export default {
     },
     processNodeData(node) {
       node.fileModifiedTimeString = formatTimestamp(node.fileModifiedTime)
+      node.createdTimeString = formatTimestamp(node.createdTime)
       // 节点标签折行
       let wrapLength = this.userOptions.labelWrapLength
       if (wrapLength > 0) {
@@ -257,12 +265,10 @@ export default {
     },
     processProperties(node) {
       if (node.properties) {
-        if (node.id === "3BACC352-D657-44F9-8DD5-83817942D38C") {
-          Object.entries(node.properties).forEach((entry) => {
-            let [key, value] = entry
-            propertiesExtend(node, key, value)
-          })
-        }
+        Object.entries(node.properties).forEach((entry) => {
+          let [key, value] = entry
+          propertiesExtend(node, key, value)
+        })
       }
     },
     moveToNode(nodeId) {
@@ -348,10 +354,12 @@ export default {
             }
             // update edgesMap
             let changedEdgesMap = this.initEdgesMap(links)
+            let changedNodesMap = new Map()
             nodes.forEach((node) => {
               this.processNodeData(node)
-              this.nodesMap.set(node.id, node)
+              changedNodesMap.set(node.id, node)
             })
+            this.$store.commit(mutationConst.MergeNodeMap, changedNodesMap)
             // update graph data
             nodeDataset.update(nodes)
             if (links) {
@@ -366,7 +374,7 @@ export default {
       }).catch((e) => {
         console.log(e)
       })
-    }
+    },
     // method ends
   },
   mounted() {
@@ -386,6 +394,12 @@ export default {
 #btn-setting {
   position: absolute;
   right: 9px;
+  top: 9px;
+}
+
+#btn-viewer {
+  position: absolute;
+  right: 46px;
   top: 9px;
 }
 
