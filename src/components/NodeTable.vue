@@ -12,7 +12,7 @@
         <template #default="scope">
           <el-button
               size="mini"
-              @click="handleView(scope.$index, scope.row)">编辑
+              @click="handleView(scope.$index, scope.row)">查看
           </el-button>
         </template>
       </el-table-column>
@@ -29,20 +29,30 @@
         background
         :total="totalSize">
     </el-pagination>
+    <el-dialog
+        title="节点详细信息"
+        v-model="dialogVisible">
+      <NodeInfo :node="currentRow"></NodeInfo>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 
+import NodeInfo from "@/components/NodeInfo.vue";
+
 export default {
   name: "NodeTable",
+  components: {NodeInfo},
   data() {
     return {
       gridData: [],
       pageSize: 50,
       currentPage: 1,
+      currentRow: {},
       currentPageData: [],
-      unwatchNodesChange: null
+      unwatchNodesChange: null,
+      dialogVisible: false,
     }
   },
   methods: {
@@ -75,8 +85,9 @@ export default {
       let currentPage = Math.round(currentPageStart / size)
       this.handleCurrentChange(currentPage)
     },
-    handleView(index, node) {
-
+    handleView(index, row) {
+      this.currentRow = row
+      this.dialogVisible = true
     }
   },
   computed: {
