@@ -31,7 +31,7 @@
     </el-pagination>
     <el-dialog
         title="节点详细信息"
-        v-model="dialogVisible">
+        v-model="dialogVisible" width="80%">
       <NodeInfo :node="currentRow"></NodeInfo>
     </el-dialog>
   </div>
