@@ -10,8 +10,8 @@
     <el-descriptions-item label="节点标签" span="2">
       <el-tag size="mini" class="nodeTag" v-for="tag in node.tags">{{ tag }}</el-tag>
     </el-descriptions-item>
-    <el-descriptions-item label="buffer位置">{{ node.pos }}</el-descriptions-item>
-    <el-descriptions-item label="级别">{{ node.level===0 ? '文件节点' : node.level }}</el-descriptions-item>
+    <el-descriptions-item label="buffer位置">{{ node.point }}</el-descriptions-item>
+    <el-descriptions-item label="级别">{{ node.level === 0 ? '文件节点' : node.level }}</el-descriptions-item>
     <el-descriptions-item label="TODO">{{ node.todo ? "是" : "否" }}</el-descriptions-item>
     <el-descriptions-item label="TODO 优先级">{{ node.priority }}</el-descriptions-item>
     <el-descriptions-item label="计划时间">{{ node.scheduled }}</el-descriptions-item>
@@ -19,7 +19,10 @@
     <el-descriptions-item label="文件">{{ node.file }}</el-descriptions-item>
     <el-descriptions-item label="文件修改时间">{{ node.fileModifiedTimeString }}</el-descriptions-item>
     <el-descriptions-item label="属性" span="2">
-      <el-tag size="mini" class="nodeTag" v-for="tag in Object.entries(node.properties)">{{ tag[0] }}:{{tag[1]}}</el-tag>
+      <div v-for="tag in Object.entries(node.properties)">
+        <el-tag size="mini" class="nodeTag">{{ tag[0] }}</el-tag>{{ tag[1] }}
+        <br/>
+      </div>
     </el-descriptions-item>
   </el-descriptions>
 </template>
@@ -35,6 +38,7 @@ export default {
 
 <style scoped>
 .nodeTag {
-  margin-right: 3px;
+  margin-top: 2px;
+  margin-right: 8px;
 }
 </style>

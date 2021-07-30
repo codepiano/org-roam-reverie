@@ -7,7 +7,7 @@
         </template>
         <Graph/>
       </el-tab-pane>
-      <el-tab-pane label="消息中心">
+      <el-tab-pane>
         <template #label>
           <span><i class="el-icon-notebook-1"></i> 节点信息</span>
         </template>

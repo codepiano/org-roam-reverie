@@ -142,7 +142,7 @@ export default {
       }).then(response => {
         let networkData = response.data
         let nodes = networkData.nodes
-        // init nodesMap and version
+        // init nodesMap, aliasMap and version
         let {nodesMap, version} = this.initNodesMapAndVersion(nodes)
         this.$store.commit(mutationConst.SetNodeMap, nodesMap)
         this.version = version
@@ -232,6 +232,7 @@ export default {
     },
     initNodesMapAndVersion(nodes) {
       // init <id, node> map, set max file modified time
+      // init <alias, node> map
       let nodesMap = new Map()
       let version = 0
       nodes.forEach((node) => {

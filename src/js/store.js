@@ -5,6 +5,7 @@ const nodesData = {
     state: () => ({
         nodesMap: new Map(),
         nodesMapChanged: 0,
+        aliasMap: new Map(),
     }),
     mutations: {
         [mutationConst.SetNodeMap](state, map) {
@@ -16,7 +17,10 @@ const nodesData = {
                 state.nodesMap.set(k, v)
             })
             state.nodesMapChanged++
-        }
+        },
+        [mutationConst.SetAliasMap](state, map) {
+            state.aliasMap = map
+        },
     },
 }
 
