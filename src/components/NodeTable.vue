@@ -328,11 +328,6 @@ export default {
     if (this.unwatchNodesChange) {
       this.unwatchNodesChange()
     }
-  },
-  watch: {
-    tags() {
-      console.log(this.tags)
-    }
   }
 }
 </script>
