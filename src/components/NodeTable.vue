@@ -14,8 +14,8 @@
         <el-button type="warning" size="mini" @click="resetSearch">重 置</el-button>
       </el-form-item>
     </el-form>
-    <el-table size="small" stripe :data="currentPageData">
-      <el-table-column property="createdTimeString" label="创建日期" width="150"></el-table-column>
+    <el-table size="small" @sort-change="sortTable" stripe :data="currentPageData">
+      <el-table-column sortable="custom" property="createdTimeString" label="创建日期" width="150"></el-table-column>
       <el-table-column property="title" label="标题"></el-table-column>
       <el-table-column label="标签">
         <template #default="scope">
@@ -100,6 +100,7 @@ export default {
           x.tags.forEach(y => tagSet.add(y))
         }
       }
+      gridData.sort((x, y) => y.createdTime - x.createdTime)
       this.gridData = gridData
       this.allGridData = gridData
       this.currentPageData = gridData.slice(0, this.pageSize)
@@ -298,6 +299,18 @@ export default {
         right: []
       }
       this.$refs.mutexSelection.reset()
+    },
+    sortTable({column, prop, order}) {
+      let comparator = null
+      if (prop === "createdTimeString") {
+        if (order === "ascending") {
+          comparator = (x, y) => x.createdTime - y.createdTime
+        } else if (order === "descending") {
+          comparator = (x, y) => y.createdTime - x.createdTime
+        }
+        this.gridData.sort(comparator)
+        this.handleCurrentChange(this.currentPage)
+      }
     }
   },
   computed: {
