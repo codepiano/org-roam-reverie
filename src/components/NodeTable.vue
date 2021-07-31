@@ -55,6 +55,8 @@
 
 import NodeInfo from "@/components/NodeInfo.vue";
 import MutuallyExclusiveSelections from "@/components/MutuallyExclusiveSelections.vue";
+import {setCompare} from "@/js/collection";
+import * as filters from "@/js/filters";
 
 export default {
   name: "NodeTable",
@@ -73,10 +75,15 @@ export default {
         title: ""
       },
       lastSearch: {
-        title: ""
+        title: "",
+        left: [],
+        right: []
       },
       tagOptions: [],
-      tags: {}
+      tags: {
+        left: [],
+        right: []
+      }
     }
   },
   methods: {
@@ -128,42 +135,105 @@ export default {
       this.dialogVisible = true
     },
     compareSearchOptions() {
+      // TODO 标签的处理太复杂了，应该没必要这么优化
       let result = {
-        added: [],
+        differ: new Set(),
         restore: false
       }
-      let added = []
       if (this.lastSearch.title !== this.form.title) {
         // 只处理参数发生变化的情况
         if (this.lastSearch.title === '') {
           // 新增标题过滤
-          added.push('title')
+          result.differ.add(filters.Title)
         } else {
           // 移除或修改标题过滤
           result.restore = true
           return result
         }
       }
+
+      // 包含标签
+      let leftResult = setCompare(this.tags.left, this.lastSearch.left)
+      if (leftResult === 1 || leftResult === 3) {
+        // 新增包含标签，需要重新计算
+        result.restore = true
+        return result
+      } else if (leftResult === 2) {
+        // 移除包含标签，过滤即可
+        result.differ.add(filters.Left)
+      }
+      // 排除标签
+      let rightResult = setCompare(this.tags.right, this.lastSearch.right)
+      if (leftResult === 1) {
+        // 新增排除标签
+        result.differ.add(fitlers.Right)
+      } else if (rightResult === 2 || rightResult === 3) {
+        // 删除或者更换
+        result.restore = true
+        return result
+      }
+
       return result
     },
     onSubmit() {
+      if (this.form.title === "" && this.tags.left.length === 0 && this.tags.right.length === 0) {
+        if (this.lastSearch.title === "" && this.lastSearch.left.length === 0 && this.lastSearch.right.length === 0) {
+          // 没有搜索条件，也无需恢复
+          return
+        } else {
+          // 搜索条件被重置
+          this.gridData = this.allGridData
+          this.handleCurrentChange(1)
+          return
+        }
+      }
       let gridData = null
       let title = this.form.title
-      let {added, restore} = this.compareSearchOptions()
+      let left = this.tags.left
+      let right = this.tags.right
+      let {differ, restore} = this.compareSearchOptions()
       if (restore) {
         gridData = this.allGridData
       } else {
         gridData = this.gridData
       }
       this.lastSearch.title = title
-      let data = gridData.filter(x => {
-        if (x.title.includes(title)) {
-          return true
-        }
-        if (x.aliases) {
-          return x.aliases.some(y => y.includes(title))
-        }
-        return false
+      // 构建 filterChain
+      let filterChain = []
+      if (left && left.length > 0 && (restore || differ.has('left'))) {
+        filterChain.push(filters.Left)
+      }
+      if (right && right.length > 0 && (restore || differ.has('right'))) {
+        filterChain.push(filters.Right)
+      }
+      if (title && (restore || differ.has('title'))) {
+        filterChain.push(filters.Title)
+      }
+      // 过滤数据
+      if (filterChain.length === 0) {
+        this.gridData = this.allGridData
+        this.handleCurrentChange(1)
+        return
+      }
+      let data = gridData.filter(node => {
+        let result = false
+        filterChain.forEach(y => {
+          let result = false
+          if (filters.filterMap.has(y)) {
+            if (y === filters.Left) {
+
+            }
+            if (y === filters.Right) {
+
+            }
+            if (y === filters.Title) {
+              if (filters.title(node, title)) {
+                return true
+              }
+            }
+          }
+        })
+        return result
       })
       if (data.length !== this.gridData.length) {
         this.gridData = data
