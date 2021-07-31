@@ -13,7 +13,7 @@ const nodesData = {
             state.nodesMapChanged++
         },
         [mutationConst.MergeNodeMap](state, map) {
-            map.forEach((k, v) => {
+            map.forEach((v, k) => {
                 state.nodesMap.set(k, v)
             })
             state.nodesMapChanged++
