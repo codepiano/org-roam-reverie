@@ -7,6 +7,7 @@
                @clear="setOptions"
                filterable
                multiple
+               style="width: 400px"
                placeholder="请选择">
       <el-option
           v-for="item in leftOptions"
@@ -22,6 +23,7 @@
                @clear="setOptions"
                filterable
                multiple
+               style="width: 400px"
                placeholder="请选择">
       <el-option
           v-for="item in rightOptions"
@@ -65,6 +67,10 @@ export default {
     }
   },
   methods: {
+    reset() {
+      this.leftModel = []
+      this.rightModel = []
+    },
     exclusive(val) {
       // val 是 leftModel 或者 rightModel，返回另一个组件的 options
       let valSet = new Set()

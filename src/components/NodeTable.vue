@@ -1,17 +1,17 @@
 <template>
   <div>
-    <el-form :inline="true" :model="form">
+    <el-form :model="form">
       <el-form-item label="标题" label-width="40px">
         <el-input v-model="form.title" style="width: 400px" placeholder=""></el-input>
       </el-form-item>
-      <el-form-item label="标签" label-width="auto">
-        <MutuallyExclusiveSelections :options="tagOptions"
+      <el-form-item label="标签" label-width="40px">
+        <MutuallyExclusiveSelections ref="mutexSelection" :options="tagOptions"
                                      v-model="tags"
-                                     left="包含标签"
-                                     right="排除标签"/>
+        />
       </el-form-item>
-      <el-form-item label-width="auto" label="操作">
-        <el-button type="primary" size="mini" @click="onSubmit">查询</el-button>
+      <el-form-item label-width="40px" label="操作">
+        <el-button type="primary" size="mini" @click="onSubmit">查 询</el-button>
+        <el-button type="warning" size="mini" @click="resetSearch">重 置</el-button>
       </el-form-item>
     </el-form>
     <el-table size="small" stripe :data="currentPageData">
@@ -19,7 +19,7 @@
       <el-table-column property="title" label="标题"></el-table-column>
       <el-table-column label="标签">
         <template #default="scope">
-          <el-tag size="mini" v-for="tag in scope.row.tags">{{ tag }}</el-tag>
+          <el-tag size="mini" class="nodeTag" v-for="tag in scope.row.tags">{{ tag }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作">
@@ -31,18 +31,20 @@
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        :current-page="currentPage"
-        :page-sizes="[100, 200, 300, 400]"
-        :page-size="pageSize"
-        :pager-count=17
-        hide-on-single-page
-        layout="total, sizes, prev, pager, next, jumper"
-        background
-        :total="totalSize">
-    </el-pagination>
+    <div style="text-align: center">
+      <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :current-page="currentPage"
+          :page-sizes="[100, 200, 300, 400]"
+          :page-size="pageSize"
+          :pager-count=17
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          style="margin-top: 20px;"
+          :total="totalSize">
+      </el-pagination>
+    </div>
     <el-dialog
         title="节点详细信息"
         v-model="dialogVisible" width="80%">
@@ -55,7 +57,7 @@
 
 import NodeInfo from "@/components/NodeInfo.vue";
 import MutuallyExclusiveSelections from "@/components/MutuallyExclusiveSelections.vue";
-import {setCompare} from "@/js/collection";
+import {setCompare, differenceArray} from "@/js/collection";
 import * as filters from "@/js/filters";
 
 export default {
@@ -124,7 +126,6 @@ export default {
       this.currentPageData = this.gridData.slice(start, end)
     },
     handleSizeChange(size) {
-      console.log("size change")
       let currentPageStart = this.pageSize * (this.currentPage - 1)
       this.pageSize = size
       let currentPage = Math.round(currentPageStart / size)
@@ -151,26 +152,51 @@ export default {
           return result
         }
       }
-
-      // 包含标签
+      /**
+       * 包含标签
+       *
+       * 上一次  本次 c   改动类型
+       * 空     有   1           filter
+       * 有     空   2           restore
+       * 空     空   0           nothing
+       * 有     有   0 完全相同    nothing
+       * 有     有   1 只本次新增  restore
+       * 有     有   2 只本次删除  restore/filter（过滤的时候不能只按被删除的标签过滤，
+       *                         因为一个节点可能有多个标签，其中一个被删除，但是其他的标签还包含在本次中)
+       * 有     有   3 都有改动    restore
+       */
       let leftResult = setCompare(this.tags.left, this.lastSearch.left)
-      if (leftResult === 1 || leftResult === 3) {
+      if (leftResult !== 0) {
         // 新增包含标签，需要重新计算
+        if (leftResult === 1) {
+          if (this.tags.left.length !== 0 && this.lastSearch.left.length === 0) {
+            result.differ.add(filters.Left)
+          }
+        }
         result.restore = true
         return result
-      } else if (leftResult === 2) {
-        // 移除包含标签，过滤即可
-        result.differ.add(filters.Left)
       }
-      // 排除标签
+      /**
+       * 排除标签
+       *
+       * 上一次  本次 c 改动类型
+       * 空     有   1           filter
+       * 有     空   2           restore
+       * 空     空   0           nothing
+       * 有     有   0 完全相同    nothing
+       * 有     有   1 只本次新增  filter
+       * 有     有   2 只本次删除  restore
+       * 有     有   3 都有改动    restore
+       */
       let rightResult = setCompare(this.tags.right, this.lastSearch.right)
-      if (leftResult === 1) {
-        // 新增排除标签
-        result.differ.add(fitlers.Right)
-      } else if (rightResult === 2 || rightResult === 3) {
-        // 删除或者更换
-        result.restore = true
-        return result
+      if (rightResult !== 0) {
+        // 新增包含标签，需要重新计算
+        if (rightResult === 1) {
+          result.differ.add(filters.Right)
+        } else {
+          result.restore = true
+          return result
+        }
       }
 
       return result
@@ -197,48 +223,81 @@ export default {
       } else {
         gridData = this.gridData
       }
-      this.lastSearch.title = title
       // 构建 filterChain
       let filterChain = []
-      if (left && left.length > 0 && (restore || differ.has('left'))) {
+      if (left && left.length > 0 && (restore || differ.has(filters.Left))) {
         filterChain.push(filters.Left)
       }
-      if (right && right.length > 0 && (restore || differ.has('right'))) {
+      if (right && right.length > 0 && (restore || differ.has(filters.Right))) {
         filterChain.push(filters.Right)
       }
-      if (title && (restore || differ.has('title'))) {
+      if (title && (restore || differ.has(filters.Title))) {
         filterChain.push(filters.Title)
       }
       // 过滤数据
       if (filterChain.length === 0) {
-        this.gridData = this.allGridData
-        this.handleCurrentChange(1)
         return
       }
+      // 生成过滤的集合
+      let leftDifferenceSet = null
+      let rightDifferenceArray = null
+      leftDifferenceSet = new Set(left)
+      if (restore) {
+        // restore 的时候需要重新过滤，直接使用 right 的值
+        rightDifferenceArray = new Set(right)
+      } else {
+        // 不需要 restore 的时候，为添加了标签的情况，需要 diff 出来被添加的标签
+        rightDifferenceArray = differenceArray(right, this.lastSearch.right)
+      }
       let data = gridData.filter(node => {
-        let result = false
-        filterChain.forEach(y => {
-          let result = false
-          if (filters.filterMap.has(y)) {
-            if (y === filters.Left) {
-
-            }
-            if (y === filters.Right) {
-
-            }
-            if (y === filters.Title) {
-              if (filters.title(node, title)) {
-                return true
+            return filterChain.every(y => {
+              if (!filters.filterMap.has(y)) {
+                throw (new Error("no filter match"))
               }
-            }
+              switch (y) {
+                case filters.Left: {
+                  if (filters.tag(node, leftDifferenceSet)) {
+                    return true
+                  }
+                  break
+                }
+                case filters.Right: {
+                  if (!filters.tag(node, rightDifferenceArray)) {
+                    return true
+                  }
+                  break
+                }
+                case filters.Title: {
+                  if (filters.title(node, title)) {
+                    return true
+                  }
+                  break
+                }
+              }
+              return false
+            })
           }
-        })
-        return result
-      })
+      )
+      this.lastSearch.title = title
+      this.lastSearch.left = left
+      this.lastSearch.right = right
       if (data.length !== this.gridData.length) {
         this.gridData = data
         this.handleCurrentChange(1)
       }
+    },
+    resetSearch() {
+      this.form.title = ""
+      this.tags = {
+        left: [],
+        right: []
+      }
+      this.lastSearch = {
+        title: "",
+        left: [],
+        right: []
+      }
+      this.$refs.mutexSelection.reset()
     }
   },
   computed: {
@@ -259,11 +318,15 @@ export default {
   },
   watch: {
     tags() {
+      console.log(this.tags)
     }
   }
 }
 </script>
 
 <style scoped>
-
+.nodeTag {
+  margin-top: 2px;
+  margin-right: 8px;
+}
 </style>

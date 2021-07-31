@@ -1,3 +1,11 @@
+export const differenceArray = (a, b) => {
+    // 返回 Set
+    if (!a || !b) {
+        throw(new Error('param empty'))
+    }
+    return differenceSet(new Set(a), new Set(b))
+}
+
 export const differenceSet = (setA, setB) => {
     let _difference = new Set(setA)
     for (let elem of setB) {
@@ -27,17 +35,17 @@ export const arrayValueEqual = (a, b) => {
     return symmetricDifference(as, bs).size === 0
 }
 
-function setCompare(a, b) {
+export const setCompare = (a, b) => {
     let as = new Set(a), bs = new Set(b)
     let differLeft = differenceSet(as, bs)
     let differRight = differenceSet(bs, as)
-    if (differLeft.size === 0 || differRight.size === 0) {
+    if (differLeft.size === 0 && differRight.size === 0) {
         // 相等
         return 0
     } else if (differLeft.size !== 0 && differRight.size === 0) {
         // a 包含 b
         return 1
-    } else if (differLeft.size === 0 && differLeft.size !== 0) {
+    } else if (differLeft.size === 0 && differRight.size !== 0) {
         // b 包含 a
         return 2
     } else {
