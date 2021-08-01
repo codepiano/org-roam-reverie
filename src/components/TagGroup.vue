@@ -1,6 +1,7 @@
 <template>
   <div>
-    <el-collapse>
+    <FilterableTagPanel :tags="tags"/>
+    <el-collapse style="margin-top:20px">
       <el-collapse-item v-for="tag in tags" :title=tag :name=tag>
         <NodeTable :tableKey=tag @sortTable="sortTable" :currentPageData="currentPageData(tag)"
                    @handleClick="handleClick" @handleView="handleView"/>
@@ -18,10 +19,11 @@
 import {openRoamProtocol} from '@/js/org'
 import NodeInfo from "@/components/NodeInfo.vue";
 import NodeTable from "@/components/NodeTable.vue";
+import FilterableTagPanel from "@/components/FilterableTagPanel.vue";
 
 export default {
   name: "TagGroup",
-  components: {NodeInfo, NodeTable},
+  components: {FilterableTagPanel, NodeInfo, NodeTable},
   data() {
     return {
       tagNodes: new Map(),
@@ -97,5 +99,4 @@ export default {
 </script>
 
 <style scoped>
-
 </style>

@@ -331,8 +331,4 @@ export default {
 </script>
 
 <style scoped>
-.nodeTag {
-  margin-top: 2px;
-  margin-right: 8px;
-}
 </style>

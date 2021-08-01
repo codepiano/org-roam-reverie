@@ -1,26 +1,29 @@
 <template>
   <div id="app">
-    <el-tabs type="border-card">
-      <el-tab-pane>
-        <template #label>
-          <span><i class="el-icon-share"></i> 关系图</span>
-        </template>
-        <Graph/>
-      </el-tab-pane>
-      <el-tab-pane>
-        <template #label>
-          <span><i class="el-icon-notebook-1"></i> 节点信息</span>
-        </template>
-        <NodeViewer />
-      </el-tab-pane>
-      <el-tab-pane>
-        <template #label>
-          <span><i class="el-icon-s-management"></i> 标签分组</span>
-        </template>
-        <TagGroup />
-      </el-tab-pane>
-      <el-tab-pane label="定时任务补偿">定时任务补偿</el-tab-pane>
-    </el-tabs>
+    <el-scrollbar>
+      <el-tabs type="border-card">
+        <el-tab-pane>
+          <template #label>
+            <span><i class="el-icon-share"></i> 关系图</span>
+          </template>
+          <Graph/>
+        </el-tab-pane>
+        <el-tab-pane>
+          <template #label>
+            <span><i class="el-icon-notebook-1"></i> 节点信息</span>
+          </template>
+          <NodeViewer/>
+        </el-tab-pane>
+        <el-tab-pane>
+          <template #label>
+            <span><i class="el-icon-s-management"></i> 标签分组</span>
+          </template>
+          <TagGroup/>
+        </el-tab-pane>
+        <el-tab-pane label="定时任务补偿">定时任务补偿</el-tab-pane>
+      </el-tabs>
+      <el-backtop></el-backtop>
+    </el-scrollbar>
   </div>
 </template>
 
