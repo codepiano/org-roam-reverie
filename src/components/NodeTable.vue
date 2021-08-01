@@ -16,7 +16,23 @@
     </el-form>
     <el-table size="small" @sort-change="sortTable" stripe :data="currentPageData">
       <el-table-column sortable="custom" property="createdTimeString" label="创建日期" width="150"></el-table-column>
-      <el-table-column property="title" label="标题"></el-table-column>
+      <el-table-column label="标题">
+        <template #default="scope">
+          <el-popover v-if="scope.row.aliases && scope.row.aliases.length>0"
+                      placement="top-start"
+                      title="节点别名"
+                      trigger="hover">
+            <template #reference>
+              <span>{{ scope.row.title }} <i class="el-icon-info"/></span>
+            </template>
+            <el-tag size="small" effect="plain" class="nodeTag" v-for="alias in scope.row.aliases">{{ alias }}</el-tag>
+          </el-popover>
+          <div v-if="!scope.row.aliases || scope.row.aliases.length===0">
+            <span>{{ scope.row.title }}</span>
+          </div>
+
+        </template>
+      </el-table-column>
       <el-table-column label="标签">
         <template #default="scope">
           <el-tag size="mini" class="nodeTag" v-for="tag in scope.row.tags">{{ tag }}</el-tag>

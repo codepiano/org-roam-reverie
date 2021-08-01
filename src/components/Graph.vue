@@ -7,7 +7,7 @@
       <NodeSelector ref="nodeSelector" v-on:selectTitle="moveToNode"/>
     </div>
     <el-drawer title="我是标题" v-model="drawer" :direction="direction">
-      <span>我来啦!</span>
+      <span>{{ randomSeed }}</span>
     </el-drawer>
   </div>
 </template>
@@ -61,6 +61,7 @@ export default {
       direction: 'rtl',
       userOptions: {},
       version: 0,
+      randomSeed: ''
     }
   },
   methods: {
@@ -79,7 +80,10 @@ export default {
           },
           smooth: {type: "continuous"}
         },
-        interaction: {hover: true},
+        interaction: {
+          multiselect: true,
+          hover: true
+        },
         layout: {improvedLayout: true},
         physics: {
           solver: "forceAtlas2Based",
@@ -106,6 +110,7 @@ export default {
           },
           option);
       window.network = globalNetwork
+      this.randomSeed = globalNetwork.getSeed()
 
       globalNetwork.once('startStabilizing', () => {
         let scaleOption = {scale: 0.05};
@@ -116,7 +121,7 @@ export default {
         document.getElementById("network").style.height = '100vh'
       })
       // add node click event
-      globalNetwork.on("selectNode", (data) => {
+      globalNetwork.on("doubleClick", (data) => {
         // open org-roam protocol
         if (data.nodes.length !== 1) {
           return
