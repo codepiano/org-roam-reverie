@@ -13,7 +13,12 @@
         </template>
         <NodeViewer />
       </el-tab-pane>
-      <el-tab-pane label="角色管理">角色管理</el-tab-pane>
+      <el-tab-pane>
+        <template #label>
+          <span><i class="el-icon-s-management"></i> 标签分组</span>
+        </template>
+        <TagGroup />
+      </el-tab-pane>
       <el-tab-pane label="定时任务补偿">定时任务补偿</el-tab-pane>
     </el-tabs>
   </div>
@@ -22,6 +27,7 @@
 <script setup>
 import Graph from "./components/Graph.vue";
 import NodeViewer from "./components/NodeViewer.vue";
+import TagGroup from "./components/TagGroup.vue";
 </script>
 
 <style>

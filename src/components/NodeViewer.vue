@@ -1,13 +1,13 @@
 <template>
-  <NodeTable></NodeTable>
+  <NodeList></NodeList>
 </template>
 
 <script>
-import NodeTable from "@/components/NodeTable.vue";
+import NodeList from "@/components/NodeList.vue";
 
 export default {
   name: "NodeViewer",
-  components: {NodeTable},
+  components: {NodeList},
   props: {
   },
   data() {
