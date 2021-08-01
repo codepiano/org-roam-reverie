@@ -5,7 +5,8 @@ const nodesData = {
     state: () => ({
         nodesMap: new Map(),
         nodesMapChanged: 0,
-        aliasMap: new Map(),
+        tagSet: new Set(),
+        tagSetChanged: 0,
     }),
     mutations: {
         [mutationConst.SetNodeMap](state, map) {
@@ -18,8 +19,17 @@ const nodesData = {
             })
             state.nodesMapChanged++
         },
-        [mutationConst.SetAliasMap](state, map) {
-            state.aliasMap = map
+        [mutationConst.SetTagSet](state, set) {
+            state.tagSet = set
+            state.tagSetChanged++
+        },
+        [mutationConst.MergeTagSet](state, nodesMap) {
+            nodesMap.forEach((x)=>{
+                if (x.tags && x.tags.length > 0) {
+                    x.tags.forEach(y => state.tagSet.add(y))
+                }
+            })
+            state.tagSetChanged++
         },
     },
 }

@@ -87,6 +87,7 @@ export default {
       currentRow: {},
       currentPageData: [],
       unwatchNodesChange: null,
+      unwatchTagsChange: null,
       dialogVisible: false,
       form: {
         title: ""
@@ -104,30 +105,28 @@ export default {
     }
   },
   methods: {
-    initGridData(added) {
-      let gridData = []
-      let nodesMap = this.$store.state.nodesData.nodesMap
-      let tagSet = new Set()
-      // 初始化表格数据
-      for (const x of nodesMap.values()) {
-        gridData.push(x)
-        if (x.tags) {
-          x.tags.forEach(y => tagSet.add(y))
-        }
-      }
-      gridData.sort((x, y) => y.createdTime - x.createdTime)
-      this.gridData = gridData
-      this.allGridData = gridData
-      this.currentPageData = gridData.slice(0, this.pageSize)
-      // 初始化 tag
+    initTagOptions() {
       let tagOptions = []
-      tagSet.forEach(x =>
+      this.$store.state.nodesData.tagSet.forEach(x =>
           tagOptions.push({
             label: x,
             value: x
           })
       )
       this.tagOptions = tagOptions
+    },
+    initGridData(added) {
+      let gridData = []
+      let nodesMap = this.$store.state.nodesData.nodesMap
+      // 初始化表格数据
+      for (const x of nodesMap.values()) {
+        gridData.push(x)
+      }
+      gridData.sort((x, y) => y.createdTime - x.createdTime)
+      this.gridData = gridData
+      this.allGridData = gridData
+      this.currentPageData = gridData.slice(0, this.pageSize)
+      // 初始化 tag
     },
     handleCurrentChange(val) {
       let start = (val - 1) * this.pageSize
@@ -340,13 +339,20 @@ export default {
   },
   created() {
     this.initGridData()
+    this.initTagOptions()
     this.unwatchNodesChange = this.$store.watch((state) => state.nodesData.nodesMapChanged, () => {
       this.initGridData()
+    })
+    this.unwatchTagsChange = this.$store.watch((state) => state.nodesData.tagSetChanged, () => {
+      this.initTagOptions()
     })
   },
   beforeUnmount() {
     if (this.unwatchNodesChange) {
       this.unwatchNodesChange()
+    }
+    if (this.unwatchTagsChange) {
+      this.unwatchTagsChange()
     }
   }
 }

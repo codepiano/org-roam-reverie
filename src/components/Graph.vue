@@ -248,12 +248,17 @@ export default {
       // init <alias, node> map
       let nodesMap = new Map()
       let version = 0
+      let tagSet = new Set()
       nodes.forEach((node) => {
         if (node.fileModifiedTime > version) {
           version = node.fileModifiedTime
         }
         this.processNodeData(node)
         nodesMap.set(node.id, node)
+        if (node.tags && node.tags.length > 0) {
+          node.tags.forEach(y => tagSet.add(y))
+        }
+        this.$store.commit(mutationConst.SetTagSet, tagSet)
       })
       return {
         nodesMap: nodesMap,
@@ -361,6 +366,7 @@ export default {
               changedNodesMap.set(node.id, node)
             })
             this.$store.commit(mutationConst.MergeNodeMap, changedNodesMap)
+            this.$store.commit(mutationConst.MergeTagSet, changedNodesMap)
             // update graph data
             nodeDataset.update(nodes)
             if (links) {
