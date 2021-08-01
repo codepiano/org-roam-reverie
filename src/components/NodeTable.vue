@@ -24,10 +24,8 @@
       </el-table-column>
       <el-table-column label="操作">
         <template #default="scope">
-          <el-button
-              size="mini"
-              @click="handleView(scope.$index, scope.row)">查看
-          </el-button>
+          <el-button size="mini" type="primary" @click="handleView(scope.$index, scope.row)">查看</el-button>
+          <el-button size="mini" @click="handleClick(scope.$index, scope.row)">打开</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -59,6 +57,7 @@ import NodeInfo from "@/components/NodeInfo.vue";
 import MutuallyExclusiveSelections from "@/components/MutuallyExclusiveSelections.vue";
 import {setCompare, differenceArray} from "@/js/collection";
 import * as filters from "@/js/filters";
+import {openRoamProtocol} from '@/js/org'
 
 export default {
   name: "NodeTable",
@@ -135,6 +134,11 @@ export default {
     handleView(index, row) {
       this.currentRow = row
       this.dialogVisible = true
+    },
+    handleClick(index, row) {
+      if (row) {
+        openRoamProtocol(row.id)
+      }
     },
     compareSearchOptions() {
       // TODO 标签的处理太复杂了，应该没必要这么优化

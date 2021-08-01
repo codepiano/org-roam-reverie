@@ -41,6 +41,13 @@ org-roam v2 做了一些很好的改动，但是作为一个核心功能提供�
 
 ### 目前支持的属性列表
 
-- reverie.node.shape 节点形状，枚举值： diamond, dot, star, triangle, triangleDown, hexagon, square and icon.
+- reverie.node.shape 节点形状，枚举值： diamond, dot, star, triangle, triangleDown, hexagon, square.
 - reverie.node.size 节点大小，10 以上数字
 - reverie.node.color 颜色，#ED553B、red、rgba(120,110,119)
+- reverie.node.icon font-awesome 图表作为节点形状，具体见下方说明，配置了 icon 之后 `reverie.node.shape` `reverie.node.size` `reverie.node.color` 会失效
+
+### 使用 font-awesome 作为节点形状
+
+在节点中配置属性 `:reverie.node.icon: f549_100_red` 属性值为 unicode\_size\_color 拼接，该例配置了图标为 shcool，大小为 100，颜色为红色的节点
+
+渲染的时候会使用 '\_' 分割属性值，分割后第一个值是图表的 unicode，可以在[font-awesome](https://fontawesome.com/) 网站中查询，是形如 'f549' 的 unicode 字符串，注意不是图标的英文名称，第二个值如果是数字，则当做节点大小使用，如果不是数字，当做颜色使用，第三个值为颜色

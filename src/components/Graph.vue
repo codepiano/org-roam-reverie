@@ -27,6 +27,7 @@ import {formatTimestamp} from '@/js/datetime.js'
 import {linewrap} from '@/js/string.js'
 import {propertiesExtend} from '@/js/properties.js'
 
+import {openRoamProtocol} from '@/js/org'
 import {visNetworkDefault} from '@/js/config'
 import * as mutationConst from "@/js/store_mutation_const"
 
@@ -115,12 +116,19 @@ export default {
         document.getElementById("network").style.height = '100vh'
       })
       // add node click event
-      globalNetwork.on("selectNode", this.openRoamProtocol)
+      globalNetwork.on("selectNode", (data) => {
+        // open org-roam protocol
+        if (data.nodes.length !== 1) {
+          return
+        }
+        let nodeId = data.nodes[0]
+        openRoamProtocol(nodeId)
+      })
 
 
       // let count = 1
       // globalNetwork.on("stabilizationProgress", () => console.log('doing'))
-      globalNetwork.on("stabilized", () => console.log('graph physical stabilized'))
+      globalNetwork.on("stabilized", (p) => console.log(p))
       // globalNetwork.on("resize", () => console.log('resize'))
       // globalNetwork.on("initRedraw", () => console.log('initRedraw' + count++))
       // globalNetwork.on("beforeDrawing", () => console.log('beforeDrawing'))
@@ -277,15 +285,6 @@ export default {
         "animation": true
       })
       globalNetwork.selectNodes([nodeId])
-    },
-    openRoamProtocol(data) {
-      // open org-roam protocol
-      if (data.nodes.length !== 1) {
-        return
-      }
-      let nodeId = data.nodes[0]
-      let url = `org-protocol://roam-node?node=${nodeId}`
-      window.open(url, "_self")
     },
     updateLinks(changedNodes, changedEdges) {
       // 通过和 node 原 link 数据 diff，来判断新增、删除，同时需要修改对向数据
