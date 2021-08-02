@@ -1,8 +1,8 @@
 <template>
   <div>
-    <FilterableTagPanel :tags="tags"/>
+    <FilterableTagPanel :tags="tags" @tagClick="openCollapse"/>
     <el-collapse style="margin-top:20px">
-      <el-collapse-item v-for="tag in tags" :title=tag :name=tag>
+      <el-collapse-item v-for="tag in tags" :id=tag :title=tag :name=tag>
         <NodeTable :tableKey=tag @sortTable="sortTable" :currentPageData="currentPageData(tag)"
                    @handleClick="handleClick" @handleView="handleView"/>
       </el-collapse-item>
@@ -77,6 +77,22 @@ export default {
         if (this.tagNodes.has(key)) {
           this.tagNodes.get(key).sort(comparator)
         }
+      }
+    },
+    openCollapse(tag) {
+      if (!tag) {
+        return
+      }
+      let element = document.getElementById(tag)
+      if (element) {
+        let clickElement = element.querySelector('div.el-collapse-item__header')
+        clickElement.click()
+        setTimeout(() => {
+          element.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          })
+        }, 500)
       }
     }
   },

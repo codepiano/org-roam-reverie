@@ -11,7 +11,7 @@
           style="width: 200px"
           v-model="input"/>
     </div>
-    <el-tag size="mini" class="nodeTag" v-for="tag in tagData">{{ tag }}</el-tag>
+    <el-tag size="mini" class="nodeTag" @click="$emit('tagClick', tag)" v-for="tag in tagData">{{ tag }}</el-tag>
   </div>
 
 </template>
@@ -23,7 +23,7 @@ export default {
     tags: {
       type: Object,
       default: new Set()
-    }
+    },
   },
   data() {
     return {
