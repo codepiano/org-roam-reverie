@@ -7,13 +7,10 @@
 (require 'dash)
 (require 'simple-httpd)
 
-(require 'org)
-
 (require 'ox)
 (require 'ox-html)
 
 (require 'org-roam)
-(require 'org-roam-graph)
 
 ;;; Code:
 
@@ -229,19 +226,19 @@ GROUP BY id" (if (> (length files) 0)
 
 (defservlet* roam-data application/json ()
   (let ((data (json-encode (list (cons 'nodes (org-roam-all-node-list '())) (cons 'edges (org-roam-all-link-list))))))
-    (insert (format data))))
+    (insert (format "%s" data))))
 
 (defservlet* roam-node application/json ()
   (let ((data (json-encode (org-roam-all-node-list))))
-    (insert (format data))))
+    (insert (format "%s" data))))
 
 (defservlet* roam-link application/json ()
   (let ((data (json-encode (org-roam-all-link-list))))
-    (insert (format data))))
+    (insert (format "%s" data))))
 
 (defservlet* roam-network-options application/json ()
   (let ((data (json-encode (org-roam-gather-options))))
-    (insert (format data))))
+    (insert (format "%s" data))))
 
 (defservlet* roam-recent-changes application/json (version)
   (let ((changed-nodes (org-roam-recent-node-changes (string-to-number version))))
