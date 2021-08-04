@@ -59,11 +59,4 @@ export default {
 </script>
 
 <style>
-.popper {
-  width: 400px;
-}
-
-.popper .el-select-dropdown__list {
-  width: 400px !important;
-}
 </style>

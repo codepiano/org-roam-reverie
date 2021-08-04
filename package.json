@@ -9,10 +9,11 @@
     "@fortawesome/fontawesome-free": "^5.15.3",
     "axios": "^0.21.1",
     "date-fns": "^2.23.0",
-    "element-plus": "latest",
+    "element-plus": "^1.0.2-beta.69",
     "lodash": "^4.17.21",
     "mitt": "^2.1.0",
-    "vis-network": "^9.0.4",
+    "vis-data": "^7.1.2",
+    "vis-network": "^9.0.5",
     "vue": "^3.0.5",
     "vuex": "^4.0.2"
   },
