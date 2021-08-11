@@ -161,7 +161,6 @@ export default {
         if (userOptions.visNetworkOptions) {
           let visOptions = JSON.parse(userOptions.visNetworkOptions)
           _merge(option, visOptions)
-          console.log(option)
         }
         return getNetworkData()
       }).then(response => {
@@ -364,7 +363,6 @@ export default {
           let clientVersion = this.version
           this.version = data.mtime
           return getFileChanges(clientVersion).then(response => {
-            console.log(response)
             let nodes = response.data.nodes
             let links = response.data.links
             if (!nodes || nodes.length === 0) {
@@ -433,7 +431,6 @@ export default {
       this.tagOptions = tagOptions
     },
     refreshNetwork() {
-      console.log(1)
       dataView.refresh()
     }
     // method ends
