@@ -35,8 +35,8 @@ export const arrayValueEqual = (a, b) => {
     return symmetricDifference(as, bs).size === 0
 }
 
-export const setCompare = (a, b) => {
-    let as = new Set(a), bs = new Set(b)
+// 接收两个set，比较差异
+export const setCompare = (as, bs) => {
     let differLeft = differenceSet(as, bs)
     let differRight = differenceSet(bs, as)
     if (differLeft.size === 0 && differRight.size === 0) {

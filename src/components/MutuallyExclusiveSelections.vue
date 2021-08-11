@@ -6,6 +6,7 @@
                @remove-tag="setOptions"
                @clear="setOptions"
                filterable
+               clearable
                multiple
                style="width: 400px"
                placeholder="请选择">
@@ -21,6 +22,7 @@
                @change="setOptions"
                @remove-tag="setOptions"
                @clear="setOptions"
+               clearable
                filterable
                multiple
                style="width: 400px"
@@ -73,8 +75,7 @@ export default {
     },
     exclusive(val) {
       // val 是 leftModel 或者 rightModel，返回另一个组件的 options
-      let valSet = new Set()
-      val.forEach(x => valSet.add(x))
+      let valSet = new Set(val)
       return this.options.filter(x => !valSet.has(x.value))
     },
     setOptions(emit) {
@@ -92,8 +93,8 @@ export default {
       }
       if (emit !== false) {
         this.$emit('update:modelValue', {
-          left: this.leftModel,
-          right: this.rightModel
+          left: new Set(this.leftModel),
+          right: new Set(this.rightModel)
         })
       }
     }

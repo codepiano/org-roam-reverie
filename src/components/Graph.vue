@@ -5,6 +5,8 @@
                size="mini"></el-button>
     <div id="node-selector">
       <NodeSelector ref="nodeSelector" v-on:selectTitle="moveToNode"/>
+      <MutuallyExclusiveSelections ref="mutexSelection" :options="tagOptions"
+                                   v-model="tagFilter"/>
     </div>
     <el-drawer title="我是标题" v-model="drawer" :direction="direction">
       <span>{{ randomSeed }}</span>
@@ -33,6 +35,7 @@ import * as mutationConst from "@/js/store_mutation_const"
 
 import NodeSelector from "@/components/NodeSelector.vue";
 import NodeViewer from "@/components/NodeViewer.vue";
+import MutuallyExclusiveSelections from "@/components/MutuallyExclusiveSelections.vue";
 
 /**
  * 需要更新的数据
@@ -44,6 +47,7 @@ import NodeViewer from "@/components/NodeViewer.vue";
 
 let nodeDataset = new DataSet();
 let edgeDataset = new DataSet();
+let dataView = null;
 let edgesMap = new Map()
 let globalNetwork = null;
 
@@ -54,14 +58,20 @@ const emitter = mitt()
 
 export default {
   name: 'Graph',
-  components: {NodeViewer, NodeSelector},
+  components: {NodeViewer, NodeSelector, MutuallyExclusiveSelections},
   data() {
     return {
       drawer: false,
       direction: 'rtl',
       userOptions: {},
       version: 0,
-      randomSeed: ''
+      randomSeed: '',
+      tagFilter: {
+        left: new Set(),
+        right: new Set()
+      },
+      tagOptions: [],
+      unwatchTagsChange: null
     }
   },
   methods: {
@@ -103,9 +113,11 @@ export default {
           timestep: 0.3,
         }
       }
-      let view = new DataView(nodeDataset, {})
+      dataView = new DataView(nodeDataset, {
+        filter: this.filterByTagSelection
+      })
       globalNetwork = new Network(document.getElementById("network"), {
-            nodes: view,
+            nodes: dataView,
             edges: edgeDataset
           },
           option);
@@ -382,7 +394,60 @@ export default {
         console.log(e)
       })
     },
+    filterByTagSelection(node) {
+      if (node.tags && node.tags.length !== 0) {
+        // 节点有tag
+        let result = true
+        if (this.tagFilter.right.size > 0) {
+          // node 有任何一个 tag 被 exclude，就要过滤掉
+          result = !node.tags.some(x => {
+            return this.tagFilter.right.has(x)
+          })
+          if (result === false) {
+            // 如果被排除，就不用再计算是否包含了
+            return result
+          }
+        }
+        if (this.tagFilter.left.size > 0) {
+          // node 有任何一个 tag 被 include，就要包含进去
+          result = node.tags.some(x => {
+            return this.tagFilter.left.has(x)
+          })
+        }
+        return result
+      } else {
+        // 如果node没有tag，且有包含过滤器，将node排除
+        if (this.tagFilter.left.size > 0) {
+          return false
+        }
+      }
+    },
+    initTagOptions() {
+      let tagOptions = []
+      this.$store.state.nodesData.tagSet.forEach(x =>
+          tagOptions.push({
+            label: x,
+            value: x
+          })
+      )
+      this.tagOptions = tagOptions
+    },
+    refreshNetwork() {
+      console.log(1)
+      dataView.refresh()
+    }
     // method ends
+  },
+  created() {
+    this.initTagOptions()
+    this.unwatchTagsChange = this.$store.watch((state) => state.nodesData.tagSetChanged, () => {
+      this.initTagOptions()
+    })
+  },
+  watch: {
+    tagFilter() {
+      this.refreshNetwork()
+    }
   },
   mounted() {
     this.initNetwork()
@@ -393,6 +458,11 @@ export default {
         clearInterval(timer)
       }
     })
+  },
+  beforeUnmount() {
+    if (this.unwatchTagsChange) {
+      this.unwatchTagsChange()
+    }
   }
 }
 </script>

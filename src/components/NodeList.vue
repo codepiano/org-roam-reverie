@@ -161,7 +161,7 @@ export default {
       if (leftResult !== 0) {
         // 新增包含标签，需要重新计算
         if (leftResult === 1) {
-          if (this.tags.left.length !== 0 && this.lastSearch.left.length === 0) {
+          if (this.tags.left.size !== 0 && this.lastSearch.left.size === 0) {
             result.differ.add(filters.Left)
           }
         }
@@ -194,8 +194,8 @@ export default {
       return result
     },
     onSubmit() {
-      if (this.form.title === "" && this.tags.left.length === 0 && this.tags.right.length === 0) {
-        if (this.lastSearch.title === "" && this.lastSearch.left.length === 0 && this.lastSearch.right.length === 0) {
+      if (this.form.title === "" && this.tags.left.size === 0 && this.tags.right.size === 0) {
+        if (this.lastSearch.title === "" && this.lastSearch.left.size === 0 && this.lastSearch.right.size === 0) {
           // 没有搜索条件，也无需恢复
           return
         } else {
@@ -281,13 +281,13 @@ export default {
     resetSearch() {
       this.form.title = ""
       this.tags = {
-        left: [],
-        right: []
+        left: new Set(),
+        right: new Set()
       }
       this.lastSearch = {
         title: "",
-        left: [],
-        right: []
+        left: new Set(),
+        right: new Set()
       }
       this.$refs.mutexSelection.reset()
     },

@@ -106,7 +106,8 @@ export default {
     this.unwatchNodesChange = this.$store.watch((state) => state.nodesData.nodesMapChanged, () => {
       this.initTagNodeMap()
     })
-  }, beforeUnmount() {
+  },
+  beforeUnmount() {
     if (this.unwatchNodesChange) {
       this.unwatchNodesChange()
     }
